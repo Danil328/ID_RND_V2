@@ -10,7 +10,7 @@ class Identity(nn.Module):
 		return x
 
 class Model(nn.Module):
-	def __init__(self, base_model=resnet34(pretrained=True)):
+	def __init__(self, base_model=resnet34(pretrained=False)):
 		super(Model, self).__init__()
 		self.base_model = base_model
 		self.base_model.fc = Identity()

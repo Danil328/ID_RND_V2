@@ -37,7 +37,7 @@ if __name__ == '__main__':
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
     # load model
-    model = Model(base_model = resnet34(pretrained = True))
+    model = Model(base_model = resnet34(pretrained = False))
     model.load_state_dict(torch.load(PATH_MODEL, map_location=device))
     model = model.to(device)
     model.eval()

@@ -23,8 +23,6 @@ if __name__ == '__main__':
 	criterion = torch.nn.BCELoss()
 	# criterion = FocalLoss()
 
-	iterator = iter(train_loader)
-
 	keker = Keker(model = model,
 				  dataowner = dataowner,
 				  criterion = criterion,
