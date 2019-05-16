@@ -1,3 +1,6 @@
+import os
+import shutil
+
 import torch
 from kekas import Keker, DataOwner
 from kekas.metrics import accuracy, roc_auc
@@ -12,16 +15,22 @@ from utils.metrics import idrnd_score_pytorch
 if __name__ == '__main__':
 	device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 	train_dataset = IDRND_dataset(mode = 'train')
-	train_loader = DataLoader(train_dataset, batch_size = 64, shuffle = True, num_workers = 6, drop_last = True)
+	train_loader = DataLoader(train_dataset, batch_size = 256, shuffle = True, num_workers = 6, drop_last = True)
 
 	val_dataset = IDRND_dataset(mode = 'val')
-	val_loader = DataLoader(val_dataset, batch_size = 32, shuffle = False, num_workers = 2, drop_last = True)
+	val_loader = DataLoader(val_dataset, batch_size = 256, shuffle = False, num_workers = 2, drop_last = True)
 
 	model = Model(base_model = resnet34(pretrained = True))
 
 	dataowner = DataOwner(train_loader, val_loader, None)
 	criterion = torch.nn.BCELoss()
 	# criterion = FocalLoss()
+
+	try:
+		shutil.rmtree('../output/logs', ignore_errors = True)
+	except Exception:
+		pass
+	os.mkdir('../output/logs')
 
 	keker = Keker(model = model,
 				  dataowner = dataowner,
@@ -44,14 +53,14 @@ if __name__ == '__main__':
 			  logdir = "../output/logs",
 			  cp_saver_params = {
 				  "savedir": "../output/models/",
-				  "metric": "acc",
+				  "metric": "roc_auc",
 				  "n_best": 3,
 				  "prefix": "kek",
 				  "mode": "max"},
 			  early_stop_params = {
 				  "patience": 3,
-				  "metric": "acc",
-				  "mode": "min",
+				  "metric": "roc_auc",
+				  "mode": "max",
 				  "min_delta": 0
 			  })
 	# saving

@@ -7,7 +7,7 @@ def idrnd_score(y_true, y_pred):
 	return fp * (fp + tn) + 19 * fn / (fn + tp)
 
 
-def idrnd_score_pytorch(target: torch.Tensor, preds: torch.Tensor) -> float:
+def idrnd_score_pytorch(target: torch.Tensor, preds: torch.Tensor, thresh=0.5) -> float:
 	target = target.cpu().detach().numpy()
-	preds = preds.cpu().detach().numpy().argmax(axis = 1)
+	preds = (preds.cpu().detach().numpy() > thresh).astype(int)
 	return idrnd_score(target, preds)

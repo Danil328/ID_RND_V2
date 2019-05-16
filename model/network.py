@@ -9,6 +9,7 @@ class Identity(nn.Module):
 	def forward(self, x):
 		return x
 
+
 class Model(nn.Module):
 	def __init__(self, base_model=resnet34(pretrained=False)):
 		super(Model, self).__init__()
@@ -16,6 +17,7 @@ class Model(nn.Module):
 		self.base_model.fc = Identity()
 
 		self.classifier = nn.Sequential(
+			self.base_model,
 			nn.Linear(in_features = 512, out_features = 128),
 			nn.ELU(),
 			nn.BatchNorm1d(num_features = 128),
@@ -27,6 +29,5 @@ class Model(nn.Module):
 		)
 
 	def forward(self, x):
-		x = self.base_model(x)
 		x = self.classifier(x)
 		return x

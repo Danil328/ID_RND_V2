@@ -8,7 +8,7 @@ from Dataset.id_rnd_dataset import TestAntispoofDataset
 from torch.utils.data import DataLoader
 from torchvision.models import resnet34, resnet101
 
-PATH_MODEL = '../output/models/kek.best.h5'
+PATH_MODEL = 'output/models/kek.best.h5'
 BATCH_SIZE = 64
 
 
