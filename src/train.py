@@ -7,11 +7,12 @@ from torchvision.models import resnet34, resnet101
 from Dataset.id_rnd_dataset import IDRND_dataset
 from model.network import Model
 from utils.loss import FocalLoss
+from utils.metrics import idrnd_score_pytorch
 
 if __name__ == '__main__':
 	device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 	train_dataset = IDRND_dataset(mode = 'train')
-	train_loader = DataLoader(train_dataset, batch_size = 32, shuffle = True, num_workers = 6, drop_last = True)
+	train_loader = DataLoader(train_dataset, batch_size = 64, shuffle = True, num_workers = 6, drop_last = True)
 
 	val_dataset = IDRND_dataset(mode = 'val')
 	val_loader = DataLoader(val_dataset, batch_size = 32, shuffle = False, num_workers = 2, drop_last = True)
@@ -22,12 +23,14 @@ if __name__ == '__main__':
 	criterion = torch.nn.BCELoss()
 	# criterion = FocalLoss()
 
+	iterator = iter(train_loader)
+
 	keker = Keker(model = model,
 				  dataowner = dataowner,
 				  criterion = criterion,
-				  target_key = "label",  # remember, we defined it in the reader_fn for DataKek?
-				  metrics = {"acc": accuracy, "roc_auc": roc_auc},  # optional, you can not specify any metrics at all
-				  opt = torch.optim.Adam,  # optimizer class. if note specifiyng,
+				  target_key = "label",
+				  metrics = {"acc": accuracy, "roc_auc": roc_auc, "idrnd_score": idrnd_score_pytorch},
+				  opt = torch.optim.Adam,
 				  device = device,
 				  opt_params = {"weight_decay": 1e-5})
 

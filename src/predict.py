@@ -4,39 +4,20 @@ import pandas as pd
 import torch
 import torchvision
 from model.network import Model
+from Dataset.id_rnd_dataset import TestAntispoofDataset
+from torch.utils.data import DataLoader
+from torchvision.models import resnet34, resnet101
 
-
-PATH_MODEL = '../output/models/kek_best.h5'
-BATCH_SIZE = 256
-
-
-class TestAntispoofDataset(torch.utils.data.dataset.Dataset):
-    def __init__(
-            self, paths, transform=None,
-            loader=torchvision.datasets.folder.default_loader):
-        self.paths = paths
-        self.transform = transform
-        self.loader = loader
-
-    def __getitem__(self, index):
-        image_info = self.paths[index]
-
-        img = self.loader(image_info['path'])
-        if self.transform is not None:
-            img = self.transform(img)
-
-        return image_info['id'], image_info['frame'], img
-
-    def __len__(self):
-        return len(self.paths)
+PATH_MODEL = '../output/models/kek.best.h5'
+BATCH_SIZE = 64
 
 
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--path-images-csv', default = '', type=str, required=True)
-    parser.add_argument('--path-test-dir', type=str, required=True)
-    parser.add_argument('--path-submission-csv', type=str, required=True)
+    parser.add_argument('--path-images-csv', default = '../data/check_submission_data/check_images.csv', type=str, required=False)
+    parser.add_argument('--path-test-dir', default = '../data/check_submission_data/check', type=str, required=False)
+    parser.add_argument('--path-submission-csv', default = '../data/check_submission_data/submission.csv', type=str, required=False)
     args = parser.parse_args()
 
     # prepare image paths
@@ -50,24 +31,13 @@ if __name__ == '__main__':
             'path': os.path.join(path_test_dir, row.path)
         } for _, row in test_dataset_paths.iterrows()]
 
-    # prepare dataset and loader
-    data_transforms = torchvision.transforms.Compose([
-        torchvision.transforms.Resize(224),
-        torchvision.transforms.ToTensor(),
-        torchvision.transforms.Normalize(
-            [0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
-
-    image_dataset = TestAntispoofDataset(
-        paths=paths, transform=data_transforms)
-    dataloader = torch.utils.data.DataLoader(
-        image_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+    image_dataset = TestAntispoofDataset(paths=paths)
+    dataloader = DataLoader(image_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
 
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
     # load model
-    model = torchvision.models.resnet18()
-    model.fc = torch.nn.Linear(model.fc.in_features, 1)
-
+    model = Model(base_model = resnet34(pretrained = True))
     model.load_state_dict(torch.load(PATH_MODEL, map_location=device))
     model = model.to(device)
     model.eval()
@@ -78,7 +48,7 @@ if __name__ == '__main__':
     with torch.no_grad():
         for video, frame, batch in dataloader:
             batch = batch.to(device)
-            probability = torch.sigmoid(model(batch).view(-1))
+            probability = model(batch).view(-1)
 
             samples.extend(video)
             frames.extend(frame.numpy())
