@@ -4,7 +4,7 @@ from sklearn.metrics import confusion_matrix
 
 def idrnd_score(y_true, y_pred):
 	tn, fp, fn, tp = confusion_matrix(y_true, y_pred).ravel()
-	return fp * (fp + tn) + 19 * fn / (fn + tp)
+	return fp / (fp + tn) + 19 * fn / (fn + tp)
 
 
 def idrnd_score_pytorch(target: torch.Tensor, preds: torch.Tensor, thresh=0.5) -> float:
@@ -13,7 +13,7 @@ def idrnd_score_pytorch(target: torch.Tensor, preds: torch.Tensor, thresh=0.5) -
 	return idrnd_score(target, preds)
 
 
-def far_score(target: torch.Tensor, preds: torch.Tensor, thresh=0.5) -> float:
+def far_score(target: torch.Tensor, preds: torch.Tensor, threshold:float=0.5) -> float:
 	"""
 	FAR is calculated as a fraction of negative scores exceeding your threshold.
 	FAR = imposter scores exceeding threshold/all imposter scores.
@@ -21,12 +21,12 @@ def far_score(target: torch.Tensor, preds: torch.Tensor, thresh=0.5) -> float:
 	:type target: float
 	"""
 	target = target.cpu().detach().numpy()
-	preds = (preds.cpu().detach().numpy() > thresh).astype(int)
+	preds = (preds.cpu().detach().numpy() > threshold).astype(int)
 	tn, fp, fn, tp = confusion_matrix(target, preds).ravel()
-	return fp * (fp + tn)
+	return fp / (fp + tn)
 
 
-def frr_score(target: torch.Tensor, preds: torch.Tensor, thresh=0.5) -> float:
+def frr_score(target: torch.Tensor, preds: torch.Tensor, thresh:float=0.5) -> float:
 	"""
 	FRR is calculated as a fraction of positive scores falling below your threshold.
 	FRR = genuines scores exceeding threshold/all genuine scores genuines scores exceeding threshold = FN all genuine scores = TP+FN
