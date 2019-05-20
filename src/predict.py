@@ -10,7 +10,6 @@ from torchvision.models import resnet34, resnet101, densenet169, resnet50
 
 PATH_MODEL = 'output/models/kek.best.h5'
 BATCH_SIZE = 128
-THRESHOLD = 0.1
 
 if __name__ == '__main__':
 
@@ -33,8 +32,8 @@ if __name__ == '__main__':
 			'path': os.path.join(path_test_dir, row.path)
 		} for _, row in test_dataset_paths.iterrows()]
 
-	image_dataset = TestAntispoofDataset(paths=paths)
-	dataloader = DataLoader(image_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+	image_dataset = TestAntispoofDataset(paths=paths, use_face_detection=True)
+	dataloader = DataLoader(image_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=8)
 
 	device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 

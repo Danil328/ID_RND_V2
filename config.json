@@ -1,0 +1,30 @@
+{
+  "train": {
+    "mode": "train",
+    "add_idrnd_v1_dataset": "False",
+    "use_face_detection": "False",
+    "use_sampler": "False",
+    "number_epochs": 30,
+    "batch_size": 128,
+    "learning_rate": 5e-4,
+    "weight_decay": 5e-5,
+    "val_freq": 5e3,
+    "save_checkpoint_freq": 1e4,
+    "loss_pix_weight": 1e-2,
+    "loss_feature_weight": 1.0,
+    "log_path": "../output/Statistics/logs_PSNR",
+    "path_to_training_results": "../output/training_results_PSNR",
+    "path_to_save_model": "../output/PSNR_model"
+  },
+
+  "val": {
+    "SERVICE": "travis-ci",
+    "HOOK_URL": "web-hooking-url-from-ci-service"
+  },
+
+  "test": {
+    "path_to_model": "../output/models/netG_x4_epoch=25",
+    "path_to_image": "../images/improved_photo.jpg",
+    "path_to_save_image": "../images/improved_photo_SR.png"
+  }
+}
