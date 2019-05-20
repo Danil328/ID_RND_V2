@@ -25,7 +25,7 @@ if __name__ == '__main__':
 	train_loader = DataLoader(train_dataset, batch_size=config['batch_size'], shuffle=True, num_workers=8, drop_last=True,
 								  pin_memory=True)
 
-	val_dataset = IDRND_3D_dataset(mode=config['mode'].replace('train', 'val'), use_face_detection=False)
+	val_dataset = IDRND_3D_dataset(mode=config['mode'].replace('train', 'val'), use_face_detection=str2bool(config['use_face_detection']))
 	val_loader = DataLoader(val_dataset, batch_size=config['batch_size'], shuffle=True, num_workers=4, drop_last=False)
 
 	model = resnet34()
