@@ -4,8 +4,8 @@ import os
 from tqdm import trange, tqdm
 import cv2
 
-PATH_TO_IMAGE = '../data/train'
-PATH_TO_SAVE_IMAGE = '../data/train_crop'
+PATH_TO_IMAGE = '../data/val'
+PATH_TO_SAVE_IMAGE = '../data/val_crop'
 
 if __name__ == '__main__':
 	images = glob.glob(os.path.join(PATH_TO_IMAGE, '*/*/*.png'))
