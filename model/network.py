@@ -18,13 +18,13 @@ class Model(nn.Module):
 
 		self.classifier = nn.Sequential(
 			self.base_model,
-			nn.Linear(in_features = 512, out_features = 128),
+			nn.Linear(in_features=512, out_features=64),
 			nn.ELU(),
-			nn.BatchNorm1d(num_features = 128),
-			nn.Linear(in_features = 128, out_features = 32),
-			nn.ELU(),
-			nn.BatchNorm1d(num_features = 32),
-			nn.Linear(in_features = 32, out_features = 1),
+			# nn.BatchNorm1d(num_features = 128),
+			# nn.Linear(in_features = 128, out_features = 32),
+			# nn.ELU(),
+			nn.BatchNorm1d(num_features=64),
+			nn.Linear(in_features=64, out_features=1),
 			nn.Sigmoid()
 		)
 

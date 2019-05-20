@@ -6,10 +6,11 @@ import torchvision
 from model.network import Model
 from Dataset.id_rnd_dataset import TestAntispoofDataset
 from torch.utils.data import DataLoader
-from torchvision.models import resnet34, resnet101
+from torchvision.models import resnet34, resnet101, densenet169, resnet50
 
 PATH_MODEL = 'output/models/kek.best.h5'
-BATCH_SIZE = 64
+BATCH_SIZE = 128
+THRESHOLD = 0.1
 
 
 if __name__ == '__main__':
@@ -62,5 +63,4 @@ if __name__ == '__main__':
 
     predictions = predictions.groupby('id').probability.mean().reset_index()
     predictions['prediction'] = predictions.probability
-    predictions[['id', 'prediction']].to_csv(
-        args.path_submission_csv, index=False)
+    predictions[['id', 'prediction']].to_csv(args.path_submission_csv, index=False)

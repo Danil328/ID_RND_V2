@@ -22,3 +22,20 @@ class FocalLoss(nn.Module):
             return torch.mean(f_loss)
         else:
             return f_loss
+
+
+class WeightedBCELoss(nn.Module):
+    def __init__(self, weights=None):
+        super(WeightedBCELoss, self).__init__()
+        self.weights = weights
+
+    def forward(self, output, target):
+        if self.weights is not None:
+            assert len(self.weights) == 2
+
+            loss = self.weights[1] * (target * torch.log(output)) + \
+                   self.weights[0] * ((1 - target) * torch.log(1 - output))
+        else:
+            loss = target * torch.log(output) + (1 - target) * torch.log(1 - output)
+
+        return torch.neg(torch.mean(loss))
