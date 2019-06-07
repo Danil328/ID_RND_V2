@@ -5,16 +5,14 @@
     "use_face_detection": "False",
     "use_sampler": "False",
     "number_epochs": 30,
-    "batch_size": 128,
+    "batch_size": 40,
     "learning_rate": 5e-4,
-    "weight_decay": 5e-5,
+    "weight_decay": 1e-5,
     "val_freq": 5e3,
     "save_checkpoint_freq": 1e4,
     "loss_pix_weight": 1e-2,
     "loss_feature_weight": 1.0,
-    "log_path": "../output/Statistics/logs_PSNR",
-    "path_to_training_results": "../output/training_results_PSNR",
-    "path_to_save_model": "../output/PSNR_model"
+    "log_path": "../output/logs"
   },
 
   "val": {

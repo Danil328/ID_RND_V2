@@ -39,3 +39,26 @@ class WeightedBCELoss(nn.Module):
             loss = target * torch.log(output) + (1 - target) * torch.log(1 - output)
 
         return torch.neg(torch.mean(loss))
+
+
+def one_hot_embedding(labels, num_classes):
+    return torch.eye(num_classes)[labels.data.cpu()]
+
+
+class FocalLossMulticlass(nn.Module):
+
+    def __init__(self, alpha=1, gamma=2, eps=1e-7):
+        super(FocalLossMulticlass, self).__init__()
+        self.alpha = alpha
+        self.gamma = gamma
+        self.eps = eps
+
+    def forward(self, input, target):
+        num_cls = input.shape[1]
+        model_out = torch.add(input, self.eps)
+        onehot_labels = torch.nn.functional.one_hot(target, num_cls)
+        ce = torch.mul(onehot_labels.float(), -torch.log(model_out))
+        weight = torch.mul(onehot_labels.float(), torch.pow(torch.sub(1., model_out), self.gamma))
+        fl = torch.mul(self.alpha, torch.mul(weight, ce))
+        reduced_fl = torch.max(fl, dim=1)
+        return reduced_fl

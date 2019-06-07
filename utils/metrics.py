@@ -22,6 +22,16 @@ def idrnd_score_pytorch(target: torch.Tensor, preds: torch.Tensor, thresh=0.5) -
 	return idrnd_score(target, preds)
 
 
+def idrnd_score_pytorch_for_eval(target: torch.Tensor, preds: torch.Tensor, thresholds=np.arange(0.1, 1.0, 0.05)) -> float:
+	target = target.cpu().detach().numpy()
+	scores = []
+	for thresh in thresholds:
+		temp_preds = preds.clone()
+		temp_preds = (temp_preds.cpu().detach().numpy() > thresh).astype(int)
+		scores.append(idrnd_score(target, temp_preds))
+	return np.min(scores)
+
+
 def far_score(target: torch.Tensor, preds: torch.Tensor, threshold: float = 0.5) -> float:
 	"""
 	FAR is calculated as a fraction of negative scores exceeding your threshold.
