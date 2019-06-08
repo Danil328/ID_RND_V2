@@ -5,7 +5,7 @@
     "use_face_detection": "False",
     "use_sampler": "False",
     "number_epochs": 30,
-    "batch_size": 20,
+    "batch_size": 24,
     "learning_rate": 5e-4,
     "weight_decay": 1e-5,
     "val_freq": 5e3,
@@ -13,7 +13,7 @@
     "loss_pix_weight": 1e-2,
     "loss_feature_weight": 1.0,
     "log_path": "../output/logs",
-    "image_resolution": 224
+    "image_resolution": 300
   },
 
   "val": {
