@@ -10,7 +10,7 @@ from model.network import DoubleLossModel, DoubleLossModelTwoHead
 from model.efficientnet_pytorch import EfficientNet
 from torchvision.models import resnet34, resnet101, densenet169, resnet50
 
-PATH_MODEL = 'for_predict/DoubleModel_21_0.02208267090620032.pth'
+PATH_MODEL = 'for_predict/DoubleModel_11_0.01405511393746688.pth'
 BATCH_SIZE = 32
 
 if __name__ == '__main__':

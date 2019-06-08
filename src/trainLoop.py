@@ -10,9 +10,10 @@ from torch.optim.lr_scheduler import ExponentialLR
 from torch.utils.data import DataLoader
 from torchsummary import summary
 from tqdm import trange, tqdm
+import pretrainedmodels
 
 from Dataset.id_rnd_dataset import IDRND_dataset, make_weights_for_balanced_classes
-from model.network import DoubleLossModel, DoubleLossModelTwoHead
+from model.network import DoubleLossModel, DoubleLossModelTwoHead, Model
 from src.tools import str2bool
 from utils.loss import FocalLoss, FocalLossMulticlass
 from utils.metrics import idrnd_score_pytorch, far_score, frr_score, bce_accuracy, idrnd_score_pytorch_for_eval
@@ -31,7 +32,8 @@ if __name__ == '__main__':
 	val_dataset = IDRND_dataset(mode=config['mode'].replace('train', 'val'), use_face_detection=False, double_loss_mode=True)
 	val_loader = DataLoader(val_dataset, batch_size=8, shuffle=True, num_workers=4, drop_last=False)
 
-	model = DoubleLossModelTwoHead(base_model=EfficientNet.from_pretrained('efficientnet-b3')).to(device)
+	# model = DoubleLossModelTwoHead(base_model=EfficientNet.from_pretrained('efficientnet-b3')).to(device)
+	model = DoubleLossModelTwoHead(base_model=pretrainedmodels.__dict__['senet154'](num_classes=1000, pretrained='imagenet')).to(device)
 	# model = Model(base_model=resnet34(pretrained=True))
 	summary(model, (3, 224, 224), device='cuda')
 
