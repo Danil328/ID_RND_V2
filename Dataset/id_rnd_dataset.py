@@ -16,9 +16,10 @@ sys.path.append('..')
 
 
 class IDRND_dataset(Dataset):
-	def __init__(self, path='../data', mode='train', double_loss_mode=False, add_idrnd_v1_dataset=False, use_face_detection=False):
+	def __init__(self, path='../data', mode='train', double_loss_mode=False, add_idrnd_v1_dataset=False, use_face_detection=False, output_shape=224):
 		self.path_to_data = path
 		self.mode = mode
+		self.output_shape = output_shape
 		self.double_loss_mode = double_loss_mode
 		self.use_face_detection = use_face_detection
 		self.masks = glob.glob(os.path.join(self.path_to_data, mode, '2dmask/*/*.png'))
@@ -97,7 +98,7 @@ class IDRND_dataset(Dataset):
 
 		image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-		image = cv2.resize(image, (224, 224))
+		image = cv2.resize(image, (self.output_shape, self.output_shape))
 		image = self.aug(image=image)['image'] / 255.
 		image = np.moveaxis(image, -1, 0)
 		if self.double_loss_mode:
