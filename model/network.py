@@ -1,6 +1,8 @@
 import torch.nn as nn
 from torchvision.models import resnet34
 import torch
+import torch.nn.functional as F
+
 
 class Identity(nn.Module):
 	def __init__(self):
@@ -82,6 +84,10 @@ class DoubleLossModelTwoHead(nn.Module):
 
 	def forward(self, x):
 		x = self.base_model(x)
+		# Spatial Dropout
+		# x = x.permute(0, 2, 1)  # convert to [batch, channels, time]
+		# x = F.dropout2d(x, 0.25, training=self.training)
+		# x = x.permute(0, 2, 1)  # back to [batch, time, channels]
 		out0 = self.block1(x)
 		out1 = self.block2(x)
 		return out0, out1

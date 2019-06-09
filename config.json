@@ -1,10 +1,10 @@
 {
   "train": {
     "mode": "train",
-    "add_idrnd_v1_dataset": "False",
+    "add_idrnd_v1_dataset": "True",
     "use_face_detection": "False",
     "use_sampler": "False",
-    "number_epochs": 30,
+    "number_epochs": 25,
     "batch_size": 24,
     "learning_rate": 5e-4,
     "weight_decay": 1e-5,

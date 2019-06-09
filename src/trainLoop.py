@@ -11,6 +11,7 @@ from torch.utils.data import DataLoader
 from torchsummary import summary
 from tqdm import trange, tqdm
 import pretrainedmodels
+from torchcontrib.optim import SWA
 
 from Dataset.id_rnd_dataset import IDRND_dataset, make_weights_for_balanced_classes
 from model.network import DoubleLossModel, DoubleLossModelTwoHead, Model
@@ -39,11 +40,11 @@ if __name__ == '__main__':
 	# model = Model(base_model=resnet34(pretrained=True))
 	summary(model, (3, config['image_resolution'], config['image_resolution']), device='cuda')
 
-	criterion = FocalLoss().to(device)
+	criterion = FocalLoss(add_weight=False).to(device)
 	criterion4class = CrossEntropyLoss().to(device)
 
 	optimizer = torch.optim.Adam(model.parameters(), lr=config['learning_rate'], weight_decay=config['weight_decay'])
-	scheduler = ExponentialLR(optimizer, gamma=0.8)
+	scheduler = ExponentialLR(optimizer, gamma=0.85)
 
 	shutil.rmtree(config['log_path'])
 	os.mkdir(config['log_path'])
@@ -51,12 +52,21 @@ if __name__ == '__main__':
 	val_writer = SummaryWriter(os.path.join(config['log_path'], "val"))
 
 	global_step = 0
-	for epoch in trange(config['number_epochs']-5):
+	for epoch in trange(config['number_epochs']-10):
+		if epoch == 5:
+			train_dataset = IDRND_dataset(mode=config['mode'],
+										  add_idrnd_v1_dataset=False,
+										  use_face_detection=str2bool(config['use_face_detection']),
+										  double_loss_mode=True,
+										  output_shape=config['image_resolution'])
+			train_loader = DataLoader(train_dataset, batch_size=config['batch_size'], shuffle=True, num_workers=8,
+									  pin_memory=True, drop_last=True)
 		model.train()
 		train_bar = tqdm(train_loader)
 		train_bar.set_description_str(desc=f"N epochs - {epoch}")
 
 		scheduler.step()
+		train_writer.add_scalar(tag="learning_rate", scalar_value=scheduler.get_lr()[0], global_step=epoch)
 		for step, batch in enumerate(train_bar):
 			global_step += 1
 			image = batch['image'].to(device)
@@ -67,7 +77,7 @@ if __name__ == '__main__':
 			loss4class = criterion4class(output4class, label4class)
 			loss = criterion(output.squeeze(), label)
 			optimizer.zero_grad()
-			total_loss = loss4class*0.5 + loss*0.5
+			total_loss = loss4class*0.4 + loss*0.6
 			total_loss.backward()
 			optimizer.step()
 			train_writer.add_scalar(tag="BinaryLoss", scalar_value=loss.item(), global_step=global_step)
@@ -80,6 +90,7 @@ if __name__ == '__main__':
 				train_writer.add_scalar(tag="accuracy", scalar_value=bce_accuracy(label, output), global_step=global_step)
 			except Exception:
 				pass
+
 
 		model.eval()
 		val_bar = tqdm(val_loader)
@@ -107,16 +118,18 @@ if __name__ == '__main__':
 		torch.save(model.state_dict(), f"../output/models/DoubleModelTwoHead/DoubleModel_{epoch}_{score}.pth")
 
 	# SGD
-	criterion = FocalLoss(add_weight=True).to(device)
+	criterion = FocalLoss(add_weight=False).to(device)
 	optimizer = torch.optim.SGD(model.parameters(), lr=config['learning_rate']/100, weight_decay=config['weight_decay'])
+	swa = SWA(optimizer, swa_start=10, swa_freq=5, swa_lr=config['learning_rate']/200)
 	scheduler = ExponentialLR(optimizer, gamma=0.8)
 
-	for epoch in trange(config['number_epochs']-5, config['number_epochs']):
+	for epoch in trange(config['number_epochs']-10, config['number_epochs']):
 		model.train()
 		train_bar = tqdm(train_loader)
 		train_bar.set_description_str(desc=f"N epochs - {epoch}")
 
 		scheduler.step()
+		train_writer.add_scalar(tag="learning_rate", scalar_value=scheduler.get_lr()[0], global_step=epoch)
 		for step, batch in enumerate(train_bar):
 			global_step += 1
 			image = batch['image'].to(device)
@@ -127,7 +140,7 @@ if __name__ == '__main__':
 			loss4class = criterion4class(output4class, label4class)
 			loss = criterion(output.squeeze(), label)
 			optimizer.zero_grad()
-			total_loss = loss4class * 0.5 + loss * 0.5
+			total_loss = loss4class * 0.3 + loss * 0.7
 			total_loss.backward()
 			optimizer.step()
 			train_writer.add_scalar(tag="BinaryLoss", scalar_value=loss.item(), global_step=global_step)
@@ -144,6 +157,7 @@ if __name__ == '__main__':
 										global_step=global_step)
 			except Exception:
 				pass
+		swa.swap_swa_sgd()
 
 		model.eval()
 		val_bar = tqdm(val_loader)

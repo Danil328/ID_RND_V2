@@ -35,7 +35,10 @@ class IDRND_dataset(Dataset):
 			self.real += self.idrnd_v1_real
 			self.replay += self.idrnd_v1_replay
 
-		self.aug = self.get_aug()
+		if self.mode == 'train':
+			self.aug = self.get_aug()
+		else:
+			self.aug = self.get_aug(p=0.0)
 		self.images = self.masks + self.printed + self.replay + self.real
 		if self.double_loss_mode:
 			self.labels = [1] * len(self.masks) + [2] * len(self.printed) + [3] * len(self.replay) + [0] * len(self.real)
@@ -53,14 +56,14 @@ class IDRND_dataset(Dataset):
 			  f'Replay images - {len(self.replay)}\n' +
 			  f'Real images - {len(self.real)}')
 
-		print(f'Spoof images - {self.labels.sum()}\n' +
+		print(f'\nSpoof images - {self.labels.sum()}\n' +
 			  f'Real images - {self.__len__() - self.labels.sum()}')
 
 	@staticmethod
 	def get_aug(p=.9):
 		return Compose([
 			OneOf([
-				# RandomRotate90(),
+				RandomRotate90(),
 				Flip()
 			]),
 			# OneOf([
@@ -109,9 +112,10 @@ class IDRND_dataset(Dataset):
 
 
 class TestAntispoofDataset(Dataset):
-	def __init__(self, paths, use_face_detection=False):
+	def __init__(self, paths, use_face_detection=False, output_shape=224):
 		self.paths = paths
 		self.use_face_detection = use_face_detection
+		self.output_shape = output_shape
 
 	def __getitem__(self, index):
 		image_info = self.paths[index]
@@ -121,7 +125,7 @@ class TestAntispoofDataset(Dataset):
 		# 	img = get_face(img)
 
 		img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-		img = cv2.resize(img, (224, 224)) / 255.
+		img = cv2.resize(img, (self.output_shape, self.output_shape)) / 255.
 		img = np.moveaxis(img, -1, 0)
 		return image_info['id'], image_info['frame'], torch.tensor(img, dtype=torch.float)
 
