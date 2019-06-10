@@ -44,7 +44,7 @@ if __name__ == '__main__':
 	criterion4class = CrossEntropyLoss().to(device)
 
 	optimizer = torch.optim.Adam(model.parameters(), lr=config['learning_rate'], weight_decay=config['weight_decay'])
-	scheduler = ExponentialLR(optimizer, gamma=0.85)
+	scheduler = ExponentialLR(optimizer, gamma=0.9)
 
 	shutil.rmtree(config['log_path'])
 	os.mkdir(config['log_path'])
@@ -61,6 +61,7 @@ if __name__ == '__main__':
 										  output_shape=config['image_resolution'])
 			train_loader = DataLoader(train_dataset, batch_size=config['batch_size'], shuffle=True, num_workers=8,
 									  pin_memory=True, drop_last=True)
+			criterion = FocalLoss(add_weight=True).to(device)
 		model.train()
 		train_bar = tqdm(train_loader)
 		train_bar.set_description_str(desc=f"N epochs - {epoch}")
@@ -119,9 +120,9 @@ if __name__ == '__main__':
 
 	# SGD
 	criterion = FocalLoss(add_weight=False).to(device)
-	optimizer = torch.optim.SGD(model.parameters(), lr=config['learning_rate']/100, weight_decay=config['weight_decay'])
-	swa = SWA(optimizer, swa_start=10, swa_freq=5, swa_lr=config['learning_rate']/200)
-	scheduler = ExponentialLR(optimizer, gamma=0.8)
+	optimizer = torch.optim.SGD(model.parameters(), lr=config['learning_rate']/10, weight_decay=config['weight_decay'])
+	# swa = SWA(optimizer, swa_start=10, swa_freq=5, swa_lr=config['learning_rate']/20)
+	scheduler = ExponentialLR(optimizer, gamma=0.9)
 
 	for epoch in trange(config['number_epochs']-10, config['number_epochs']):
 		model.train()
@@ -157,7 +158,7 @@ if __name__ == '__main__':
 										global_step=global_step)
 			except Exception:
 				pass
-		swa.swap_swa_sgd()
+		# swa.swap_swa_sgd()
 
 		model.eval()
 		val_bar = tqdm(val_loader)

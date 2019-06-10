@@ -6,17 +6,20 @@ import cv2
 import torch
 from albumentations import (
 	RandomRotate90,
-	Flip, OneOf, Compose
-)
+	Flip, OneOf, Compose,
+	ShiftScaleRotate)
 from torch.utils.data import Dataset
 import matplotlib.pyplot as plt
 
 sys.path.append('..')
+
+
 # from utils.face_detection.face_detection import get_face
 
 
 class IDRND_dataset(Dataset):
-	def __init__(self, path='../data', mode='train', double_loss_mode=False, add_idrnd_v1_dataset=False, use_face_detection=False, output_shape=224):
+	def __init__(self, path='../data', mode='train', double_loss_mode=False, add_idrnd_v1_dataset=False,
+				 use_face_detection=False, output_shape=224):
 		self.path_to_data = path
 		self.mode = mode
 		self.output_shape = output_shape
@@ -41,7 +44,8 @@ class IDRND_dataset(Dataset):
 			self.aug = self.get_aug(p=0.0)
 		self.images = self.masks + self.printed + self.replay + self.real
 		if self.double_loss_mode:
-			self.labels = [1] * len(self.masks) + [2] * len(self.printed) + [3] * len(self.replay) + [0] * len(self.real)
+			self.labels = [1] * len(self.masks) + [2] * len(self.printed) + [3] * len(self.replay) + [0] * len(
+				self.real)
 		else:
 			self.labels = [1] * len(self.masks + self.printed + self.replay) + [0] * len(self.real)
 
@@ -64,7 +68,8 @@ class IDRND_dataset(Dataset):
 		return Compose([
 			OneOf([
 				RandomRotate90(),
-				Flip()
+				Flip(),
+				ShiftScaleRotate(shift_limit=0.0625, scale_limit=0.1, rotate_limit=10)
 			]),
 			# OneOf([
 			#     IAAAdditiveGaussianNoise(),
@@ -75,7 +80,6 @@ class IDRND_dataset(Dataset):
 			#     MedianBlur(blur_limit = 3, p = 0.1),
 			#     Blur(blur_limit = 3, p = 0.0),
 			# ], p = 0.1),
-			# ShiftScaleRotate(shift_limit = 0.0625, scale_limit = 0.1, rotate_limit = 45, p = 0.0),
 			# OneOf([
 			#     OpticalDistortion(p = 0.1),
 			#     GridDistortion(p = .1),
@@ -107,7 +111,7 @@ class IDRND_dataset(Dataset):
 		if self.double_loss_mode:
 			return {"image": torch.tensor(image, dtype=torch.float),
 					"label0": torch.tensor(label, dtype=torch.long),
-					"label1": torch.tensor(1-int(label==0), dtype=torch.float)}
+					"label1": torch.tensor(1 - int(label == 0), dtype=torch.float)}
 		return {"image": torch.tensor(image, dtype=torch.float), "label": torch.tensor(label, dtype=torch.float)}
 
 
@@ -158,7 +162,8 @@ class IDRND_3D_dataset(Dataset):
 		self.aug = self.get_aug()
 		self.users = self.masks + self.printed + self.replay + self.real
 		if self.double_loss_mode:
-			self.labels = [1] * len(self.masks) + [2] * len(self.printed) + [3] * len(self.replay) + [0] * len(self.real)
+			self.labels = [1] * len(self.masks) + [2] * len(self.printed) + [3] * len(self.replay) + [0] * len(
+				self.real)
 		else:
 			self.labels = [1] * len(self.masks + self.printed + self.replay) + [0] * len(self.real)
 
@@ -205,7 +210,7 @@ class IDRND_3D_dataset(Dataset):
 		if self.double_loss_mode:
 			return {"image": torch.tensor(out_image, dtype=torch.float),
 					"label0": torch.tensor(label, dtype=torch.long),
-					"label1": torch.tensor(1-int(label==0), dtype=torch.float)}
+					"label1": torch.tensor(1 - int(label == 0), dtype=torch.float)}
 		return {"image": torch.tensor(out_image, dtype=torch.float), "label": torch.tensor(label, dtype=torch.float)}
 
 
