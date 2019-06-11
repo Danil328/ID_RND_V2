@@ -5,7 +5,7 @@ from torch.autograd import Variable
 
 
 class FocalLoss(nn.Module):
-    def __init__(self, alpha=1, gamma=2, logits=False, reduce=True, add_weight=False, pos_weight=0.5, neg_weight=1.0):
+    def __init__(self, alpha=1, gamma=2, logits=False, reduce=True, add_weight=False, pos_weight=1.0, neg_weight=2.0):
         super(FocalLoss, self).__init__()
         self.alpha = alpha
         self.gamma = gamma
@@ -21,7 +21,7 @@ class FocalLoss(nn.Module):
             weights = targets.clone()
             weights[(targets == 0.0) & (inputs >= 0.5)] = self.pos_weight
             weights[(targets == 0.0) & (inputs < 0.5)] = self.pos_weight
-            weights[(targets == 1.0) & (inputs >= 0.5)] = self.neg_weight
+            weights[(targets == 1.0) & (inputs >= 0.5)] = self.pos_weight
             weights[(targets == 1.0) & (inputs < 0.5)] = self.neg_weight
         else:
             weights = None
@@ -97,7 +97,7 @@ class RobustFocalLoss2d(nn.Module):
         self.gamma = gamma
         self.size_average = size_average
 
-    def forward(self, logit, target, class_weight=None, type='sigmoid'):
+    def forward(self, logit, target, class_weight=None, type='softmax'):
         target = target.view(-1, 1).long()
 
         if type == 'sigmoid':
@@ -111,7 +111,7 @@ class RobustFocalLoss2d(nn.Module):
             select.scatter_(1, target, 1.0)
 
         elif type == 'softmax':
-            B, C, H, W = logit.size()
+            B, C = logit.size()
             if class_weight is None:
                 class_weight = [1] * C  # [1/C]*C
 

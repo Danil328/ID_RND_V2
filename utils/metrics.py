@@ -1,6 +1,7 @@
 import torch
 from sklearn.metrics import confusion_matrix, accuracy_score
 import numpy as np
+import pandas as pd
 
 
 def bce_accuracy(target: torch.Tensor,
@@ -22,13 +23,37 @@ def idrnd_score_pytorch(target: torch.Tensor, preds: torch.Tensor, thresh=0.5) -
 	return idrnd_score(target, preds)
 
 
-def idrnd_score_pytorch_for_eval(target: torch.Tensor, preds: torch.Tensor, thresholds=np.arange(0.1, 1.0, 0.05)) -> float:
+def idrnd_score_pytorch_for_eval(target: torch.Tensor, preds: torch.Tensor,
+								 thresholds=np.arange(0.1, 1.0, 0.01)) -> float:
 	target = target.cpu().detach().numpy()
 	scores = []
 	for thresh in thresholds:
 		temp_preds = preds.clone()
 		temp_preds = (temp_preds.cpu().detach().numpy() > thresh).astype(int)
 		scores.append(idrnd_score(target, temp_preds))
+	return np.min(scores)
+
+
+def idrnd_score_pytorch_for_eval_for_user(target: torch.Tensor, preds: torch.Tensor, user_ids, frames,
+										  thresholds=np.arange(0.1, 1.0, 0.05)) -> float:
+	target = target.cpu().detach().numpy()
+	predicts = preds.cpu().detach().numpy()
+	df = pd.DataFrame()
+	df['user_id'] = user_ids
+	df['frame'] = frames
+	df['probability'] = predicts
+	df['target'] = target
+	df = df.groupby('user_id')['probability', 'target'].mean().reset_index()
+	df['prediction'] = df.probability
+	df = df[['user_id', 'prediction', 'target']]
+
+	targets = df.target.values
+	predicts = df.prediction.values
+	scores = []
+	for thresh in thresholds:
+		temp_predicts = predicts.copy()
+		temp_preds = (temp_predicts > thresh).astype(int)
+		scores.append(idrnd_score(targets, temp_preds))
 	return np.min(scores)
 
 
@@ -60,7 +85,7 @@ def frr_score(target: torch.Tensor, preds: torch.Tensor, thresh: float = 0.5) ->
 
 def search_threshold(labels, predict):
 	scores = list()
-	thresholds = np.arange(0.05, 0.95, 0.01)
+	thresholds = np.arange(0.01, 0.99, 0.01)
 	for threshold in thresholds:
 		pred = (np.array(predict.copy()) > threshold).astype(int)
 		scores.append(idrnd_score(labels, pred))

@@ -12,7 +12,7 @@ from torchvision.models import resnet34, resnet101, densenet169, resnet50
 from collections import defaultdict
 from glob import glob
 
-PATH_MODEL = 'for_predict/DoubleModel_12_0.021068892421833598.pth'
+PATH_MODEL = 'for_predict/DoubleModel_11_0.017068892421833598.pth'
 output_shape = 300
 BATCH_SIZE = 16
 USE_TTA = True

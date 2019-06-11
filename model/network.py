@@ -72,12 +72,12 @@ class DoubleLossModelTwoHead(nn.Module):
 		# self.base_model._fc = Identity()
 
 		self.block1 = nn.Sequential(
-			nn.Dropout(),
+			nn.Dropout(p=0.25),
 			nn.Linear(in_features=1000, out_features=4),
 			nn.Softmax()
 		)
 		self.block2 = nn.Sequential(
-			nn.Dropout(),
+			nn.Dropout(p=0.25),
 			nn.Linear(in_features=1000, out_features=1),
 			nn.Sigmoid()
 		)
