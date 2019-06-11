@@ -202,3 +202,138 @@ class EfficientNet(nn.Module):
         valid_models = ['efficientnet_b'+str(i) for i in range(num_models)]
         if model_name.replace('-','_') not in valid_models:
             raise ValueError('model_name should be one of: ' + ', '.join(valid_models))
+
+
+class EfficientNetGAP(nn.Module):
+    """
+    An EfficientNet model. Most easily loaded with the .from_name or .from_pretrained methods
+
+    Args:
+        blocks_args (list): A list of BlockArgs to construct blocks
+        global_params (namedtuple): A set of GlobalParams shared between blocks
+
+    Example:
+        model = EfficientNet.from_pretrained('efficientnet-b0')
+
+    """
+
+    def __init__(self, blocks_args=None, global_params=None):
+        super().__init__()
+        assert isinstance(blocks_args, list), 'blocks_args should be a list'
+        assert len(blocks_args) > 0, 'block args must be greater than 0'
+        self._global_params = global_params
+        self._blocks_args = blocks_args
+        self.gap = [10, 20]
+        # Batch norm parameters
+        bn_mom = 1 - self._global_params.batch_norm_momentum
+        bn_eps = self._global_params.batch_norm_epsilon
+
+        # Stem
+        in_channels = 3  # rgb
+        out_channels = round_filters(32, self._global_params)  # number of output channels
+        self._conv_stem = Conv2dSamePadding(in_channels, out_channels, kernel_size=3, stride=2, bias=False)
+        self._bn0 = nn.BatchNorm2d(num_features=out_channels, momentum=bn_mom, eps=bn_eps)
+
+        # Build blocks
+        self._blocks = nn.ModuleList([])
+        for block_args in self._blocks_args:
+
+            # Update block input and output filters based on depth multiplier.
+            block_args = block_args._replace(
+                input_filters=round_filters(block_args.input_filters, self._global_params),
+                output_filters=round_filters(block_args.output_filters, self._global_params),
+                num_repeat=round_repeats(block_args.num_repeat, self._global_params)
+            )
+
+            # The first block needs to take care of stride and filter size increase.
+            self._blocks.append(MBConvBlock(block_args, self._global_params))
+            if block_args.num_repeat > 1:
+                block_args = block_args._replace(input_filters=block_args.output_filters, stride=1)
+            for _ in range(block_args.num_repeat - 1):
+                self._blocks.append(MBConvBlock(block_args, self._global_params))
+
+        self.gap_head1 = nn.Sequential(
+            Conv2dSamePadding(96, 32, kernel_size=1, bias=False),
+            nn.BatchNorm2d(num_features=32),
+            nn.ReLU(),
+            nn.AdaptiveAvgPool2d(1)
+        )
+        self.gap_head2 = nn.Sequential(
+            Conv2dSamePadding(232, 64, kernel_size=1, bias=False),
+            nn.BatchNorm2d(num_features=64),
+            nn.ReLU(),
+            nn.AdaptiveAvgPool2d(1)
+        )
+        # Head
+        in_channels = block_args.output_filters  # output of final block
+        out_channels = round_filters(1280, self._global_params)
+        self._conv_head = Conv2dSamePadding(in_channels, out_channels, kernel_size=1, bias=False)
+        self._bn1 = nn.BatchNorm2d(num_features=out_channels, momentum=bn_mom, eps=bn_eps)
+
+        # Final linear layer
+        self._dropout = self._global_params.dropout_rate
+        self._fcc = nn.Linear(out_channels + 32 + 64, self._global_params.num_classes)
+
+    def extract_features(self, inputs):
+        """ Returns output of the final convolution layer """
+
+        # Stem
+        x = relu_fn(self._bn0(self._conv_stem(inputs)))
+        # Blocks
+        for idx, block in enumerate(self._blocks):
+            drop_connect_rate = self._global_params.drop_connect_rate
+            if drop_connect_rate:
+                drop_connect_rate *= float(idx) / len(self._blocks)
+            x = block(x)  # , drop_connect_rate) # see https://github.com/tensorflow/tpu/issues/381
+            if idx == self.gap[0]:
+                gap_output1 = x
+            if idx == self.gap[1]:
+                gap_output2 = x
+        return x, gap_output1, gap_output2
+
+    def forward(self, inputs):
+        """ Calls extract_features to extract features, applies final linear layer, and returns logits. """
+
+        # Convolution layers
+        x, gap_output1, gap_output2 = self.extract_features(inputs)
+        gap_output1 = self.gap_head1(gap_output1)
+        gap_output2 = self.gap_head2(gap_output2)
+        gap_output1 = gap_output1.view(gap_output1.size(0), -1)
+        gap_output2 = gap_output2.view(gap_output2.size(0), -1)
+        # Head
+        x = relu_fn(self._bn1(self._conv_head(x)))
+        x = F.adaptive_avg_pool2d(x, 1).squeeze(-1).squeeze(-1)
+
+        x = torch.cat([gap_output1, gap_output2, x], dim=1)
+
+        if self._dropout:
+            x = F.dropout(x, p=self._dropout, training=self.training)
+        x = self._fcc(x)
+        return x
+
+    @classmethod
+    def from_name(cls, model_name, override_params=None):
+        cls._check_model_name_is_valid(model_name)
+        blocks_args, global_params = get_model_params(model_name, override_params)
+        return EfficientNetGAP(blocks_args, global_params)
+
+    @classmethod
+    def from_pretrained(cls, model_name):
+        model = EfficientNetGAP.from_name(model_name)
+        load_pretrained_weights(model, model_name, )
+        return model
+
+    @classmethod
+    def get_image_size(cls, model_name):
+        cls._check_model_name_is_valid(model_name)
+        _, _, res, _ = efficientnet_params(model_name)
+        return res
+
+    @classmethod
+    def _check_model_name_is_valid(cls, model_name, also_need_pretrained_weights=False):
+        """ Validates model name. None that pretrained weights are only available for
+        the first four models (efficientnet-b{i} for i in 0,1,2,3) at the moment. """
+        num_models = 4 if also_need_pretrained_weights else 8
+        valid_models = ['efficientnet_b'+str(i) for i in range(num_models)]
+        if model_name.replace('-','_') not in valid_models:
+            raise ValueError('model_name should be one of: ' + ', '.join(valid_models))

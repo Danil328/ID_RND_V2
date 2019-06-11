@@ -96,7 +96,7 @@ class IDRND_dataset(Dataset):
 
 	def __getitem__(self, idx):
 		path_to_image = self.images[idx]
-		user_id = path_to_image.split('/')[-2].split('_')[-1]
+		user_id = path_to_image.split('/')[-2]
 		frame = path_to_image[-6:-4]
 		image = cv2.imread(path_to_image)
 		label = self.labels[idx]
@@ -229,7 +229,7 @@ class IDRND_3D_dataset(Dataset):
 if __name__ == '__main__':
 	dataset = IDRND_dataset(mode='train', add_idrnd_v1_dataset=True)
 	batch = dataset[1]
-
+	user_id = batch['user_id']
 	# dataset = IDRND_3D_dataset(mode='val')
 	# batch = dataset[4]
 

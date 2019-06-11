@@ -35,7 +35,7 @@ def idrnd_score_pytorch_for_eval(target: torch.Tensor, preds: torch.Tensor,
 
 
 def idrnd_score_pytorch_for_eval_for_user(target: torch.Tensor, preds: torch.Tensor, user_ids, frames,
-										  thresholds=np.arange(0.1, 1.0, 0.05)) -> float:
+										  thresholds=np.arange(0.0, 1.0, 0.01)) -> float:
 	target = target.cpu().detach().numpy()
 	predicts = preds.cpu().detach().numpy()
 	df = pd.DataFrame()
@@ -44,11 +44,10 @@ def idrnd_score_pytorch_for_eval_for_user(target: torch.Tensor, preds: torch.Ten
 	df['probability'] = predicts
 	df['target'] = target
 	df = df.groupby('user_id')['probability', 'target'].mean().reset_index()
-	df['prediction'] = df.probability
-	df = df[['user_id', 'prediction', 'target']]
+	df = df[['user_id', 'probability', 'target']]
 
 	targets = df.target.values
-	predicts = df.prediction.values
+	predicts = df.probability.values
 	scores = []
 	for thresh in thresholds:
 		temp_predicts = predicts.copy()

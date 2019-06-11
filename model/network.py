@@ -2,6 +2,9 @@ import torch.nn as nn
 from torchvision.models import resnet34
 import torch
 import torch.nn.functional as F
+from torchsummary import summary
+
+from model.efficientnet_pytorch import EfficientNet, EfficientNetGAP
 
 
 class Identity(nn.Module):
@@ -91,3 +94,8 @@ class DoubleLossModelTwoHead(nn.Module):
 		out0 = self.block1(x)
 		out1 = self.block2(x)
 		return out0, out1
+
+
+if __name__ == '__main__':
+	model = DoubleLossModelTwoHead()
+	summary(model, (3, 300, 300), device='cpu')

@@ -3,7 +3,7 @@ import os
 import shutil
 
 import torch
-from efficientnet_pytorch import EfficientNet
+from model.efficientnet_pytorch import EfficientNet, EfficientNetGAP
 from tensorboardX import SummaryWriter
 from torch.nn import CrossEntropyLoss
 from torch.optim.lr_scheduler import ExponentialLR, CosineAnnealingLR

@@ -241,5 +241,5 @@ url_map = {
 def load_pretrained_weights(model, model_name):
     """ Loads pretrained weights, and downloads if loading for the first time. """
     state_dict = model_zoo.load_url(url_map[model_name])
-    model.load_state_dict(state_dict)
+    model.load_state_dict(state_dict, strict=False)
     print('Loaded pretrained weights for {}'.format(model_name))
