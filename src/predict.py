@@ -2,17 +2,14 @@ import argparse
 import os
 import pandas as pd
 import torch
-import torchvision
-from model.network import Model
 from Dataset.id_rnd_dataset import TestAntispoofDataset
 from torch.utils.data import DataLoader
 from model.network import DoubleLossModel, DoubleLossModelTwoHead
 from model.efficientnet_pytorch import EfficientNet
-from torchvision.models import resnet34, resnet101, densenet169, resnet50
 from collections import defaultdict
 from glob import glob
 
-PATH_MODEL = 'for_predict/DoubleModel_13_0.02605511393746688.pth'
+PATH_MODEL = 'for_predict/DoubleModel_21_0.02001377848436672.pth'
 output_shape = 300
 BATCH_SIZE = 16
 USE_TTA = True
@@ -66,7 +63,7 @@ if __name__ == '__main__':
 			'path': os.path.join(path_test_dir, row.path)
 		} for _, row in test_dataset_paths.iterrows()]
 
-	image_dataset = TestAntispoofDataset(paths=paths, use_face_detection=True, output_shape=output_shape)
+	image_dataset = TestAntispoofDataset(paths=paths, output_shape=output_shape)
 	dataloader = DataLoader(image_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=8)
 
 	device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
