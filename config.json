@@ -5,13 +5,13 @@
     "use_face_detection": "False",
     "use_sampler": "False",
     "number_epochs": 30,
-    "batch_size": 24,
+    "batch_size": 16,
     "learning_rate": 5e-4,
     "weight_decay": 1e-5,
     "swa_start": 25,
     "swa_freq": 0.5,
     "log_path": "../output/logs",
-    "image_resolution": 300
+    "image_resolution": 600
   },
 
   "test": {

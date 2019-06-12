@@ -39,7 +39,7 @@ if __name__ == '__main__':
 								double_loss_mode=True, output_shape=config['image_resolution'])
 	val_loader = DataLoader(val_dataset, batch_size=config['batch_size'], shuffle=True, num_workers=4, drop_last=False)
 
-	model = DoubleLossModelTwoHead(base_model=EfficientNetGAP.from_pretrained('efficientnet-b3')).to(device)
+	model = DoubleLossModelTwoHead(base_model=EfficientNet.from_pretrained('efficientnet-b3')).to(device)
 	# model = DoubleLossModelTwoHead(base_model=pretrainedmodels.__dict__['senet154'](num_classes=1000, pretrained='imagenet')).to(device)
 	# model = Model(base_model=resnet34(pretrained=True))
 	summary(model, (3, config['image_resolution'], config['image_resolution']), device='cuda')

@@ -113,6 +113,11 @@ class EfficientNet(nn.Module):
         bn_mom = 1 - self._global_params.batch_norm_momentum
         bn_eps = self._global_params.batch_norm_epsilon
 
+
+        self.conv0_0 = nn.Conv2d(in_channels=3, out_channels=16, kernel_size=3, dilation=1, stride=1, padding=1)
+        self.conv0_1 = nn.Conv2d(in_channels=16, out_channels=3, kernel_size=3, dilation=1, stride=2, padding=1)
+        self.bn0 = nn.BatchNorm2d(3)
+
         # Stem
         in_channels = 3  # rgb
         out_channels = round_filters(32, self._global_params)  # number of output channels
@@ -149,6 +154,10 @@ class EfficientNet(nn.Module):
 
     def extract_features(self, inputs):
         """ Returns output of the final convolution layer """
+
+        inputs = F.relu(self.conv0_0(inputs))
+        inputs = F.relu(self.conv0_1(inputs))
+        inputs = self.bn0(inputs)
 
         # Stem
         x = relu_fn(self._bn0(self._conv_stem(inputs)))
