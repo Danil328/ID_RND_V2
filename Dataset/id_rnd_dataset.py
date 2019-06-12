@@ -122,18 +122,14 @@ class IDRND_dataset(Dataset):
 
 
 class TestAntispoofDataset(Dataset):
-	def __init__(self, paths, use_face_detection=False, output_shape=224):
+	def __init__(self, paths, output_shape=224):
 		self.paths = paths
-		self.use_face_detection = use_face_detection
 		self.output_shape = output_shape
 		self.aug = self.get_aug()
 
 	def __getitem__(self, index):
 		image_info = self.paths[index]
 		img = cv2.imread(image_info['path'])
-
-		# if self.use_face_detection:
-		# 	img = get_face(img)
 
 		img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 		img = cv2.resize(img, (self.output_shape, self.output_shape)) #/ 255.

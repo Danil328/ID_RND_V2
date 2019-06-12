@@ -68,6 +68,11 @@ class IDRND_dataset_CV(Dataset):
 	@staticmethod
 	def get_aug(p=.9):
 		return Compose([
+			Resize(height=300, width=300),
+			OneOf([
+				RandomCrop(280, 280),
+				Resize(300, 300),
+			], p=p),
 			OneOf([
 				RandomRotate90(),
 				Flip(),
@@ -76,8 +81,7 @@ class IDRND_dataset_CV(Dataset):
 				RandomBrightnessContrast(brightness_limit=0.1, contrast_limit=0.1),
 				GaussNoise()
 			], p=p),
-			Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
-			Resize(height=300, width=300)
+			Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
 		], p=1.0)
 
 	def __len__(self):
@@ -106,9 +110,8 @@ class IDRND_dataset_CV(Dataset):
 
 
 class TestAntispoofDatasetCV(Dataset):
-	def __init__(self, paths, use_face_detection=False, output_shape=224):
+	def __init__(self, paths, output_shape=224):
 		self.paths = paths
-		self.use_face_detection = use_face_detection
 		self.output_shape = output_shape
 		self.aug = self.get_aug()
 
@@ -127,8 +130,8 @@ class TestAntispoofDatasetCV(Dataset):
 	@staticmethod
 	def get_aug():
 		return Compose([
-			Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
-			Resize(height=300, width=300)
+			Resize(height=300, width=300),
+			Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
 		], p=1.0)
 
 if __name__ == '__main__':
