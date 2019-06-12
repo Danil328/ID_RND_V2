@@ -15,9 +15,13 @@ from torchcontrib.optim import SWA
 
 from Dataset.id_rnd_dataset import IDRND_dataset, make_weights_for_balanced_classes
 from model.network import DoubleLossModel, DoubleLossModelTwoHead, Model
-from src.tools import str2bool
-from utils.loss import FocalLoss, RobustFocalLoss2d
+from utils.loss import FocalLoss
 from utils.metrics import *
+
+
+def str2bool(v):
+	return v.lower() in ("yes", "true", "t", "1")
+
 
 if __name__ == '__main__':
 	with open('../config.json', 'r') as f:
@@ -35,7 +39,7 @@ if __name__ == '__main__':
 								double_loss_mode=True, output_shape=config['image_resolution'])
 	val_loader = DataLoader(val_dataset, batch_size=config['batch_size'], shuffle=True, num_workers=4, drop_last=False)
 
-	model = DoubleLossModelTwoHead(base_model=EfficientNet.from_pretrained('efficientnet-b3')).to(device)
+	model = DoubleLossModelTwoHead(base_model=EfficientNetGAP.from_pretrained('efficientnet-b3')).to(device)
 	# model = DoubleLossModelTwoHead(base_model=pretrainedmodels.__dict__['senet154'](num_classes=1000, pretrained='imagenet')).to(device)
 	# model = Model(base_model=resnet34(pretrained=True))
 	summary(model, (3, config['image_resolution'], config['image_resolution']), device='cuda')
@@ -97,6 +101,7 @@ if __name__ == '__main__':
 		if (epoch > config['swa_start'] and epoch % 2 == 0) or (epoch == config['number_epochs']-1):
 			swa.swap_swa_sgd()
 			swa.bn_update(train_loader, model, device)
+			swa.swap_swa_sgd()
 
 		model.eval()
 		val_bar = tqdm(val_loader)

@@ -2,7 +2,7 @@ import torch.nn as nn
 from torchvision.models import resnet34
 import torch
 import torch.nn.functional as F
-from torchsummary import summary
+# from torchsummary import summary
 
 from model.efficientnet_pytorch import EfficientNet, EfficientNetGAP
 
@@ -98,4 +98,4 @@ class DoubleLossModelTwoHead(nn.Module):
 
 if __name__ == '__main__':
 	model = DoubleLossModelTwoHead()
-	summary(model, (3, 300, 300), device='cpu')
+	# summary(model, (3, 300, 300), device='cpu')
