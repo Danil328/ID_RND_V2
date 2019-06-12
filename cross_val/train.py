@@ -8,7 +8,6 @@ from tensorboardX import SummaryWriter
 from torch.nn import CrossEntropyLoss
 from torch.optim.lr_scheduler import ExponentialLR, CosineAnnealingLR
 from torch.utils.data import DataLoader
-from torchsummary import summary
 from tqdm import trange, tqdm
 import pretrainedmodels
 from torchcontrib.optim import SWA
@@ -96,10 +95,10 @@ def train(model_name, optim='adam'):
 			swa.swap_swa_sgd()
 
 		scheduler.step()
-		val(model, val_loader, epoch)
+		val(model, val_loader, epoch, model_name)
 
 
-def val(model, val_loader, epoch):
+def val(model, val_loader, epoch, model_name):
 	model.eval()
 	val_bar = tqdm(val_loader)
 	val_bar.set_description_str(desc=f"N epochs - {epoch}")
@@ -131,7 +130,7 @@ def val(model, val_loader, epoch):
 	if epoch > 0:
 		user_score = idrnd_score_pytorch_for_eval_for_user(targets, outputs, user_ids, frames)
 		val_writer.add_scalar(tag="idrnd_score_val_user", scalar_value=user_score, global_step=epoch)
-		torch.save(model.state_dict(), f"models_weights/{fold}/DoubleModel_{epoch}_{score}_{user_score}.pth")
+		torch.save(model.state_dict(), f"models_weights/{fold}/{model_name}_{epoch}_{score}_{user_score}.pth")
 
 
 if __name__ == '__main__':

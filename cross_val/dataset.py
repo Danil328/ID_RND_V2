@@ -5,7 +5,7 @@ import numpy as np
 import cv2
 import torch
 from albumentations import (
-	RandomRotate90, Normalize,
+	RandomRotate90, Normalize, RandomBrightnessContrast, GaussNoise,RandomCrop,Resize,
 	Flip, OneOf, Compose)
 from torch.utils.data import Dataset
 import matplotlib.pyplot as plt
@@ -41,7 +41,7 @@ class IDRND_dataset_CV(Dataset):
 			self.replay += self.idrnd_v1_replay
 
 		if self.mode == 'train':
-			self.aug = self.get_aug()
+			self.aug = self.get_aug(0.25)
 		else:
 			self.aug = self.get_aug(p=0.0)
 		self.images = self.masks + self.printed + self.replay + self.real
@@ -72,7 +72,12 @@ class IDRND_dataset_CV(Dataset):
 				RandomRotate90(),
 				Flip(),
 			], p=p),
-			Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
+			OneOf([
+				RandomBrightnessContrast(brightness_limit=0.1, contrast_limit=0.1),
+				GaussNoise()
+			], p=p),
+			Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
+			Resize(height=300, width=300)
 		], p=1.0)
 
 	def __len__(self):
@@ -86,9 +91,7 @@ class IDRND_dataset_CV(Dataset):
 		label = self.labels[idx]
 
 		image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-		image = cv2.resize(image, (self.output_shape, self.output_shape))
-		image = self.aug(image=image)['image']  # / 255.
+		image = self.aug(image=image)['image']
 		image = np.moveaxis(image, -1, 0)
 		if self.double_loss_mode:
 			return {"image": torch.tensor(image, dtype=torch.float),
@@ -101,6 +104,32 @@ class IDRND_dataset_CV(Dataset):
 				"user_id": user_id,
 				"frame": frame}
 
+
+class TestAntispoofDatasetCV(Dataset):
+	def __init__(self, paths, use_face_detection=False, output_shape=224):
+		self.paths = paths
+		self.use_face_detection = use_face_detection
+		self.output_shape = output_shape
+		self.aug = self.get_aug()
+
+	def __getitem__(self, index):
+		image_info = self.paths[index]
+		img = cv2.imread(image_info['path'])
+
+		img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+		img = self.aug(image=img)['image']
+		img = np.moveaxis(img, -1, 0)
+		return image_info['id'], image_info['frame'], torch.tensor(img, dtype=torch.float)
+
+	def __len__(self):
+		return len(self.paths)
+
+	@staticmethod
+	def get_aug():
+		return Compose([
+			Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
+			Resize(height=300, width=300)
+		], p=1.0)
 
 if __name__ == '__main__':
 	dataset = IDRND_dataset_CV(mode='train', add_idrnd_v1_dataset=True)
