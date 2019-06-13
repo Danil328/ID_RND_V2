@@ -9,8 +9,8 @@ from model.efficientnet_pytorch import EfficientNet
 from collections import defaultdict
 from glob import glob
 
-PATH_MODEL = 'for_predict/DoubleModel_21_0.02001377848436672.pth'
-output_shape = 300
+PATH_MODEL = 'for_predict/DoubleModel_20_0.045220455749867515.pth'
+output_shape = 600
 BATCH_SIZE = 16
 USE_TTA = True
 

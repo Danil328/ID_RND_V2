@@ -3,7 +3,7 @@ import os
 import shutil
 
 import torch
-from efficientnet_pytorch import EfficientNet
+from model.efficientnet_pytorch import EfficientNet
 from tensorboardX import SummaryWriter
 from torch.nn import CrossEntropyLoss
 from torch.optim.lr_scheduler import ExponentialLR, CosineAnnealingLR
@@ -15,9 +15,10 @@ from torchcontrib.optim import SWA
 
 from Dataset.id_rnd_dataset import IDRND_dataset, make_weights_for_balanced_classes
 from model.network import DoubleLossModel, DoubleLossModelTwoHead, Model
-from src.tools import str2bool
+from src.trainLoop import str2bool
 from utils.loss import FocalLoss, RobustFocalLoss2d
 from utils.metrics import *
+from src.train_metamodel import idrnd_score_for_eval
 
 if __name__ == '__main__':
 	with open('../config.json', 'r') as f:
@@ -28,11 +29,11 @@ if __name__ == '__main__':
 	train_dataset = IDRND_dataset(mode=config['mode'],
 								  use_face_detection=str2bool(config['use_face_detection']), double_loss_mode=True,
 								  output_shape=config['image_resolution'])
-	train_loader = DataLoader(train_dataset, batch_size=96, shuffle=True, num_workers=8,
+	train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True, num_workers=8,
 							  pin_memory=True, drop_last=True)
 
 	model = DoubleLossModelTwoHead(base_model=EfficientNet.from_pretrained('efficientnet-b3')).to(device)
-	model.load_state_dict(torch.load('../output/models/DoubleModelTwoHead/DoubleModel_11_0.017068892421833598.pth', map_location=device))
+	model.load_state_dict(torch.load('../output/models/DoubleModelTwoHead/DoubleModel_20_0.045220455749867515.pth', map_location=device))
 	model.eval()
 
 	train_bar = tqdm(train_loader)
@@ -62,7 +63,7 @@ if __name__ == '__main__':
 	# df = df.groupby('user_id')['probability', 'target'].mean().reset_index()
 	# df = df[['user_id', 'probability', 'target']]
 
-	df.to_csv("../data/train_predict.csv", index=False)
+	df.to_csv("../data/train_predict_015.csv", index=False)
 
 	val_dataset = IDRND_dataset(mode=config['mode'].replace('train', 'val'), use_face_detection=str2bool(config['use_face_detection']),
 								double_loss_mode=True, output_shape=config['image_resolution'])
@@ -93,7 +94,11 @@ if __name__ == '__main__':
 	df['frame'] = frames
 	df['probability'] = outputs
 	df['target'] = targets
-	# df = df.groupby('user_id')['probability', 'target'].mean().reset_index()
-	# df = df[['user_id', 'probability', 'target']]
 
-	df.to_csv("../data/val_predict.csv", index=False)
+
+	df.to_csv("../data/val_predict_015.csv", index=False)
+
+	df = df.groupby('user_id')['probability', 'target'].mean().reset_index()
+	df = df[['user_id', 'probability', 'target']]
+	score = idrnd_score_for_eval(df['target'].values, df['probability'].values)
+	print(f"Val score = {score}")
