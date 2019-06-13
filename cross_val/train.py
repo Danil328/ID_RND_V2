@@ -9,11 +9,10 @@ from torch.nn import CrossEntropyLoss
 from torch.optim.lr_scheduler import ExponentialLR, CosineAnnealingLR
 from torch.utils.data import DataLoader
 from tqdm import trange, tqdm
-import pretrainedmodels
 from torchcontrib.optim import SWA
 
 from cross_val.dataset import IDRND_dataset_CV
-from model.network import DoubleLossModel, DoubleLossModelTwoHead, Model
+from model.network import DoubleLossModelTwoHead
 from utils.loss import FocalLoss
 from utils.metrics import *
 
@@ -95,10 +94,10 @@ def train(model_name, optim='adam'):
 			swa.swap_swa_sgd()
 
 		scheduler.step()
-		val(model, val_loader, epoch, model_name)
+		evaluate(model, val_loader, epoch, model_name)
 
 
-def val(model, val_loader, epoch, model_name):
+def evaluate(model, val_loader, epoch, model_name):
 	model.eval()
 	val_bar = tqdm(val_loader)
 	val_bar.set_description_str(desc=f"N epochs - {epoch}")

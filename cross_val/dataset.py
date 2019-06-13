@@ -69,7 +69,7 @@ class IDRND_dataset_CV(Dataset):
 	def get_aug(p=.9):
 		return Compose([
 			Resize(height=300, width=300),
-			OneOf([
+			Compose([
 				RandomCrop(280, 280),
 				Resize(300, 300),
 			], p=p),
