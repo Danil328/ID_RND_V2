@@ -2,6 +2,7 @@
   "train": {
     "mode": "train",
     "add_idrnd_v1_dataset": "True",
+    "add_nuaa_dataset": "True",
     "use_face_detection": "False",
     "use_sampler": "False",
     "number_epochs": 30,

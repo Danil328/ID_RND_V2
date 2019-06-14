@@ -2,17 +2,17 @@ import argparse
 import os
 import pandas as pd
 import torch
-from Dataset.id_rnd_dataset import TestAntispoofDataset
+from cross_val.dataset import TestAntispoofDatasetCV
 from torch.utils.data import DataLoader
 from model.network import DoubleLossModelTwoHead
 from model.efficientnet_pytorch import EfficientNet, EfficientNetGAP
 from collections import defaultdict
 from glob import glob
 
-PATH_MODEL = 'for_predict/'
+BASE_PATH = 'for_predict/'
 output_shape = 300
 BATCH_SIZE = 24
-USE_TTA = False
+USE_TTA = True
 
 
 def kaggle_bag(glob_files, loc_outfile):
@@ -64,12 +64,13 @@ if __name__ == '__main__':
 			'path': os.path.join(path_test_dir, row.path)
 		} for _, row in test_dataset_paths.iterrows()]
 
-	image_dataset = TestAntispoofDataset(paths=paths, output_shape=output_shape)
+	image_dataset = TestAntispoofDatasetCV(paths=paths, output_shape=output_shape)
 	dataloader = DataLoader(image_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=8)
 
 	device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+	#device = torch.device('cpu')
 
-	model_paths = glob(PATH_MODEL+'*.pth')
+	model_paths = glob(BASE_PATH+'*.pth')
 	for fold, model_path in enumerate(model_paths):
 		if model_path.find('EFGAP') > 0:
 			model = DoubleLossModelTwoHead(base_model=EfficientNetGAP.from_name('efficientnet-b3')).to(device)
@@ -99,13 +100,13 @@ if __name__ == '__main__':
 			# save
 			pd.DataFrame.from_dict({
 				'id': [x + ':' + str(y) for x, y in zip(samples, frames)],
-				'probability': probabilities1}).to_csv(f'for_predict/temp_submission/predict1_{fold}.csv', index=False)
+				'probability': probabilities1}).to_csv(f'{BASE_PATH}temp_submission/predict1_{fold}.csv', index=False)
 			pd.DataFrame.from_dict({
 				'id': [x + ':' + str(y) for x, y in zip(samples, frames)],
-				'probability': probabilities2}).to_csv(f'for_predict/temp_submission/predict2_{fold}.csv', index=False)
+				'probability': probabilities2}).to_csv(f'{BASE_PATH}temp_submission/predict2_{fold}.csv', index=False)
 			pd.DataFrame.from_dict({
 				'id': [x + ':' + str(y) for x, y in zip(samples, frames)],
-				'probability': probabilities3}).to_csv(f'for_predict/temp_submission/predict3_{fold}.csv', index=False)
+				'probability': probabilities3}).to_csv(f'{BASE_PATH}temp_submission/predict3_{fold}.csv', index=False)
 
 		else:
 			samples, frames, probabilities = [], [], []
@@ -122,11 +123,11 @@ if __name__ == '__main__':
 			pd.DataFrame.from_dict({
 				'id': samples,
 				'frame': frames,
-				'probability': probabilities}).to_csv(f'for_predict/temp_submission/predict_{fold}.csv', index=False)
+				'probability': probabilities}).to_csv(f'{BASE_PATH}temp_submission/predict_{fold}.csv', index=False)
 
 	# Rank Average
-	kaggle_bag("for_predict/temp_submission/predict*.csv", 'for_predict/temp_submission/submission_tta.csv')
-	predictions = pd.read_csv('for_predict/temp_submission/submission_tta.csv')
+	kaggle_bag(f"{BASE_PATH}temp_submission/predict*.csv", f'{BASE_PATH}temp_submission/submission_tta.csv')
+	predictions = pd.read_csv(f'{BASE_PATH}temp_submission/submission_tta.csv')
 	predictions['frame'] = predictions['id'].map(lambda x: x.split(":")[-1])
 	predictions['id'] = predictions['id'].map(lambda x: x.split(":")[0])
 	predictions = predictions.groupby('id').probability.mean().reset_index()

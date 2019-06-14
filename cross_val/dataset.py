@@ -18,8 +18,9 @@ sys.path.append('..')
 
 class IDRND_dataset_CV(Dataset):
 	def __init__(self, path_to_csv='cross_val_DF.csv', fold=0, mode='train', double_loss_mode=False,
-				 add_idrnd_v1_dataset=False, output_shape=300):
-
+				 add_idrnd_v1_dataset=False, add_NUAA=False, output_shape=300, aug=None):
+		if aug is None:
+			aug = [0.25, 0.5, 0.25]
 		self.cross_val_DF = pd.read_csv(path_to_csv)[['users', f'fold_{fold}']]
 		self.users = self.cross_val_DF[self.cross_val_DF[f'fold_{fold}'] == mode]['users'].values
 		self.mode = mode
@@ -40,10 +41,17 @@ class IDRND_dataset_CV(Dataset):
 			self.real += self.idrnd_v1_real
 			self.replay += self.idrnd_v1_replay
 
+		if add_NUAA:
+			self.nuaa_real = glob.glob("../data/raw/ClientRaw/*/*.jpg")
+			self.nuaa_print = glob.glob("../data/raw/ImposterRaw/*/*.jpg")
+
+			self.real += self.nuaa_real
+			self.printed += self.nuaa_print
+
 		if self.mode == 'train':
-			self.aug = self.get_aug(0.25)
+			self.aug = self.get_aug(aug)
 		else:
-			self.aug = self.get_aug(p=0.0)
+			self.aug = self.get_aug(p=[0.0, 0.0, 0.0])
 		self.images = self.masks + self.printed + self.replay + self.real
 		if self.double_loss_mode:
 			self.labels = [1] * len(self.masks) + [2] * len(self.printed) + [3] * len(self.replay) + [0] * len(
@@ -62,25 +70,25 @@ class IDRND_dataset_CV(Dataset):
 			  f'Replay images - {len(self.replay)}\n' +
 			  f'Real images - {len(self.real)}')
 
-		print(f'\nSpoof images - {self.labels.sum()}\n' +
-			  f'Real images - {self.__len__() - self.labels.sum()}')
+		print(f'\nSpoof images - {len(self.masks) + len(self.printed) + len(self.replay)}\n' +
+			  f'Real images - {len(self.real)}')
 
 	@staticmethod
-	def get_aug(p=.9):
+	def get_aug(p=[0.25, 0.25, 0.25]):
 		return Compose([
 			Resize(height=300, width=300),
 			Compose([
 				RandomCrop(280, 280),
 				Resize(300, 300),
-			], p=p),
+			], p=p[0]),
 			OneOf([
 				RandomRotate90(),
 				Flip(),
-			], p=p),
+			], p=p[1]),
 			OneOf([
 				RandomBrightnessContrast(brightness_limit=0.1, contrast_limit=0.1),
 				GaussNoise()
-			], p=p),
+			], p=p[2]),
 			Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
 		], p=1.0)
 
@@ -110,7 +118,7 @@ class IDRND_dataset_CV(Dataset):
 
 
 class TestAntispoofDatasetCV(Dataset):
-	def __init__(self, paths, output_shape=224):
+	def __init__(self, paths, output_shape=300):
 		self.paths = paths
 		self.output_shape = output_shape
 		self.aug = self.get_aug()
