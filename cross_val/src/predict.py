@@ -121,8 +121,7 @@ if __name__ == '__main__':
 
 			# save
 			pd.DataFrame.from_dict({
-				'id': samples,
-				'frame': frames,
+				'id': [x + ':' + str(y) for x, y in zip(samples, frames)],
 				'probability': probabilities}).to_csv(f'{BASE_PATH}temp_submission/predict_{fold}.csv', index=False)
 
 	# Rank Average

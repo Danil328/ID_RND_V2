@@ -23,8 +23,8 @@ def str2bool(v):
 
 def train(model_name, optim='adam'):
 	train_dataset = IDRND_dataset_CV(fold=fold, mode=config['mode'],
-									 add_idrnd_v1_dataset=str2bool(config['add_idrnd_v1_dataset']),
-									 add_NUAA=str2bool(config['add_nuaa_dataset']),
+									 add_idrnd_v1_dataset=False,
+									 add_NUAA=False, aug=[0.25, 0.5, 0.25],
 									 double_loss_mode=True, output_shape=config['image_resolution'])
 	train_loader = DataLoader(train_dataset, batch_size=config['batch_size'], shuffle=True, num_workers=8,
 							  pin_memory=True, drop_last=True)
@@ -35,44 +35,38 @@ def train(model_name, optim='adam'):
 
 	if model_name == 'EF':
 		model = DoubleLossModelTwoHead(base_model=EfficientNet.from_pretrained('efficientnet-b3')).to(device)
+		model.load_state_dict(torch.load(f"../models_weights/pretrained/{model_name}_{8}_1.6058124488733547_1.0.pth"))
 	elif model_name == 'EFGAP':
 		model = DoubleLossModelTwoHead(base_model=EfficientNetGAP.from_pretrained('efficientnet-b3')).to(device)
+		model.load_state_dict(torch.load(f"../models_weights/pretrained/{model_name}_{epoch}_{score}_{user_score}.pth"))
 
 	criterion = FocalLoss(add_weight=False).to(device)
 	criterion4class = CrossEntropyLoss().to(device)
 
-	if optim == 'adam':
-		optimizer = torch.optim.Adam(model.parameters(), lr=config['learning_rate'],
-									 weight_decay=config['weight_decay'])
-	elif optim == 'sgd':
-		optimizer = torch.optim.SGD(model.parameters(), lr=config['learning_rate'], weight_decay=config['weight_decay'],
-									nesterov=False)
-	else:
-		optimizer = torch.optim.SGD(model.parameters(), lr=config['learning_rate'], weight_decay=config['weight_decay'],
-									nesterov=True)
+	binary_weight = 0.5
+	softmax_weight = 0.5
 
-	steps_per_epoch = train_loader.__len__() - 15
+	if optim == 'adam':
+		optimizer = torch.optim.Adam(model.parameters(), lr=config['learning_rate'], weight_decay=config['weight_decay'])
+	elif optim == 'sgd':
+		optimizer = torch.optim.SGD(model.parameters(), lr=config['learning_rate'], weight_decay=config['weight_decay'])
+	else:
+		optimizer = torch.optim.SGD(model.parameters(), momentum=0.9, lr=config['learning_rate'], weight_decay=config['weight_decay'], nesterov=True)
+
+	steps_per_epoch = train_loader.__len__()
 	swa = SWA(optimizer, swa_start=config['swa_start'] * steps_per_epoch,
 			  swa_freq=int(config['swa_freq'] * steps_per_epoch), swa_lr=config['learning_rate'] / 10)
-	scheduler = ExponentialLR(swa, gamma=0.9)
-	# scheduler = StepLR(swa, step_size=2*steps_per_epoch, gamma=0.5)
+	# scheduler = ExponentialLR(swa, gamma=0.9)
+	scheduler = StepLR(swa, step_size=5*steps_per_epoch, gamma=0.52)
 
 	global_step = 0
 	for epoch in trange(config['number_epochs']):
-		if epoch == 2:
-			train_dataset = IDRND_dataset_CV(fold=fold, mode=config['mode'],
-											 add_idrnd_v1_dataset=False,
-											 add_NUAA=False,
-											 double_loss_mode=True,
-											 output_shape=config['image_resolution'])
-			train_loader = DataLoader(train_dataset, batch_size=config['batch_size'], shuffle=True, num_workers=8,
-									  pin_memory=True, drop_last=True)
 		if epoch == 10:
 			train_dataset = IDRND_dataset_CV(fold=fold, mode=config['mode'],
 											 add_idrnd_v1_dataset=False,
 											 double_loss_mode=True,
 											 output_shape=config['image_resolution'],
-											 aug=[0.0, 0.5, 0.0])
+											 aug=[0.1, 0.5, 0.1])
 			train_loader = DataLoader(train_dataset, batch_size=config['batch_size'], shuffle=True, num_workers=8,
 									  pin_memory=True, drop_last=True)
 		model.train()
@@ -89,7 +83,7 @@ def train(model_name, optim='adam'):
 			loss4class = criterion4class(output4class, label4class)
 			loss = criterion(output.squeeze(), label)
 			swa.zero_grad()
-			total_loss = loss4class * 0.5 + loss * 0.5
+			total_loss = loss4class * softmax_weight + loss * binary_weight
 			total_loss.backward()
 			swa.step()
 			train_writer.add_scalar(tag="learning_rate", scalar_value=scheduler.get_lr()[0], global_step=global_step)
@@ -105,6 +99,9 @@ def train(model_name, optim='adam'):
 										global_step=global_step)
 			except Exception:
 				pass
+
+		softmax_weight *= 0.91
+		binary_weight *= 1.02
 
 		if (epoch > config['swa_start'] and epoch % 2 == 0) or (epoch == config['number_epochs'] - 1):
 			swa.swap_swa_sgd()
@@ -144,22 +141,21 @@ def evaluate(model, val_loader, epoch, model_name):
 	val_writer.add_scalar(tag="frr_score_val", scalar_value=frr_score(targets, outputs), global_step=epoch)
 	val_writer.add_scalar(tag="accuracy_val", scalar_value=bce_accuracy(targets, outputs), global_step=epoch)
 
-	if epoch > 0:
-		user_score = idrnd_score_pytorch_for_eval_for_user(targets, outputs, user_ids, frames)
-		val_writer.add_scalar(tag="idrnd_score_val_user", scalar_value=user_score, global_step=epoch)
-		torch.save(model.state_dict(), f"models_weights/{fold}/{model_name}_{epoch}_{score}_{user_score}.pth")
+	user_score = idrnd_score_pytorch_for_eval_for_user(targets, outputs, user_ids, frames)
+	val_writer.add_scalar(tag="idrnd_score_val_user", scalar_value=user_score, global_step=epoch)
+	torch.save(model.state_dict(), f"../models_weights/{fold}/{model_name}_{epoch}_{score:.6f}_{user_score:.6f}.pth")
 
 
 if __name__ == '__main__':
-	with open('../config.json', 'r') as f:
+	with open('../../config.json', 'r') as f:
 		config = json.load(f)['train']
 
 	device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 	model_names = ['EF', 'EF', 'EFGAP', 'EF']
 	optimizer_names = ['adam', 'adam', 'adam', 'sgdN']
 
-	for fold in range(1, 4):
-		config_path = f'logs/fold_{fold}'
+	for fold in range(3, 4):
+		config_path = f'../logs/fold_{fold}'
 		try:
 			shutil.rmtree(config_path)
 		except Exception:

@@ -17,7 +17,6 @@ class FocalLoss(nn.Module):
 
     def forward(self, inputs, targets):
         if self.add_weight:
-            # weights = (targets + 1) / 2.0
             weights = targets.clone()
             weights[(targets == 0.0) & (inputs >= 0.5)] = self.pos_weight
             weights[(targets == 0.0) & (inputs < 0.5)] = self.pos_weight

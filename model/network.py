@@ -77,7 +77,7 @@ class DoubleLossModelTwoHead(nn.Module):
 		self.block1 = nn.Sequential(
 			nn.Dropout(p=0.25),
 			nn.Linear(in_features=1000, out_features=4),
-			nn.Softmax()
+			#nn.Softmax()
 		)
 		self.block2 = nn.Sequential(
 			nn.Dropout(p=0.25),
