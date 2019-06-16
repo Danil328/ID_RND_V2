@@ -34,7 +34,7 @@ class IDRND_dataset(Dataset):
 			self.idrnd_v1_real = [i for i in self.idrnd_v1_images if 'real' in i]
 
 			self.real += self.idrnd_v1_real
-			self.replay += self.idrnd_v1_replay
+			#self.replay += self.idrnd_v1_replay
 
 		if self.mode == 'train':
 			self.aug = self.get_aug()

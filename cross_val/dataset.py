@@ -37,14 +37,14 @@ class IDRND_dataset_CV(Dataset):
 			self.idrnd_v1_real = [i for i in self.idrnd_v1_images if 'real' in i]
 
 			self.real += self.idrnd_v1_real
-			self.replay += self.idrnd_v1_replay
+			# self.replay += self.idrnd_v1_replay
 
 		if add_NUAA:
 			self.nuaa_real = glob.glob("../../data/raw/ClientRaw/*/*.jpg")
 			self.nuaa_print = glob.glob("../../data/raw/ImposterRaw/*/*.jpg")
 
 			self.real += self.nuaa_real
-			self.printed += self.nuaa_print
+			# self.printed += self.nuaa_print
 
 		if self.mode == 'train':
 			self.aug = self.get_aug(aug)
@@ -227,7 +227,7 @@ class TestAntispoofDatasetCV(Dataset):
 
 
 if __name__ == '__main__':
-	dataset = IDRND_dataset_CV(mode='train', add_idrnd_v1_dataset=True)
+	dataset = IDRND_dataset_CV(mode='val', path_to_csv='cross_val_DF.csv', add_idrnd_v1_dataset=True)
 	batch = dataset[1]
 	user_id = batch['user_id']
 	i = batch['image']

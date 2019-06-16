@@ -24,8 +24,8 @@ def str2bool(v):
 def train(model_name, optim='adam'):
 	# TODO add only real data from idrdn v1
 	train_dataset = IDRND_dataset_CV(fold=fold, mode=config['mode'],
-									 add_idrnd_v1_dataset=False,
-									 add_NUAA=False, aug=[0.25, 0.5, 0.25],
+									 add_idrnd_v1_dataset=True,
+									 add_NUAA=True, aug=[0.25, 0.5, 0.25],
 									 double_loss_mode=True, output_shape=config['image_resolution'])
 	train_loader = DataLoader(train_dataset, batch_size=config['batch_size'], shuffle=True, num_workers=8,
 							  pin_memory=True, drop_last=True)
@@ -36,7 +36,10 @@ def train(model_name, optim='adam'):
 
 	if model_name == 'EF':
 		model = DoubleLossModelTwoHead(base_model=EfficientNet.from_pretrained('efficientnet-b3')).to(device)
-		model.load_state_dict(torch.load(f"../models_weights/pretrained/{model_name}_{8}_1.5062978111598622_0.9967353313006619.pth"))
+		if fold == 0:
+			model.load_state_dict(torch.load(f"../models_weights/0/EF_11_0.055154_0.027919.pth"))
+		else:
+			model.load_state_dict(torch.load(f"../models_weights/pretrained/{model_name}_{8}_1.5062978111598622_0.9967353313006619.pth"))
 	elif model_name == 'EFGAP':
 		model = DoubleLossModelTwoHead(base_model=EfficientNetGAP.from_pretrained('efficientnet-b3')).to(device)
 		model.load_state_dict(torch.load(f"../models_weights/pretrained/{model_name}_{8}_1.6058124488733547_1.0.pth"))
@@ -55,16 +58,20 @@ def train(model_name, optim='adam'):
 		optimizer = torch.optim.SGD(model.parameters(), momentum=0.9, lr=config['learning_rate'], weight_decay=config['weight_decay'], nesterov=True)
 
 	steps_per_epoch = train_loader.__len__()
-	swa = SWA(optimizer, swa_start=config['swa_start'] * steps_per_epoch,
+	swa = SWA(optimizer, swa_start=(config['swa_start']-11) * steps_per_epoch,
 			  swa_freq=int(config['swa_freq'] * steps_per_epoch), swa_lr=config['learning_rate'] / 10)
 	# scheduler = ExponentialLR(swa, gamma=0.9)
 	scheduler = StepLR(swa, step_size=5*steps_per_epoch, gamma=0.5)
 
-	global_step = 0
+	global_step = steps_per_epoch * 11
 	for epoch in trange(config['number_epochs']):
+		if epoch < 11:
+			scheduler.step()
+			continue
 		if epoch == 10:
 			train_dataset = IDRND_dataset_CV(fold=fold, mode=config['mode'],
-											 add_idrnd_v1_dataset=False,
+											 add_idrnd_v1_dataset=True,
+											 add_NUAA=True,
 											 double_loss_mode=True,
 											 output_shape=config['image_resolution'],
 											 aug=[0.1, 0.5, 0.1])

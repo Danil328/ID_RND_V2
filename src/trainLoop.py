@@ -39,7 +39,9 @@ if __name__ == '__main__':
 								double_loss_mode=True, output_shape=config['image_resolution'])
 	val_loader = DataLoader(val_dataset, batch_size=config['batch_size'], shuffle=True, num_workers=4, drop_last=False)
 
-	model = DoubleLossModelTwoHead(base_model=EfficientNetGAP.from_pretrained('efficientnet-b3')).to(device)
+	model = DoubleLossModelTwoHead(base_model=EfficientNet.from_pretrained('efficientnet-b3')).to(device)
+	model.load_state_dict(
+		torch.load(f"../cross_val/models_weights/pretrained/EF_{8}_1.5062978111598622_0.9967353313006619.pth"))
 	# model = DoubleLossModelTwoHead(base_model=pretrainedmodels.__dict__['senet154'](num_classes=1000, pretrained='imagenet')).to(device)
 	# model = Model(base_model=resnet34(pretrained=True))
 	summary(model, (3, config['image_resolution'], config['image_resolution']), device='cuda')
@@ -47,7 +49,7 @@ if __name__ == '__main__':
 	criterion = FocalLoss(add_weight=False).to(device)
 	criterion4class = CrossEntropyLoss().to(device)
 
-	steps_per_epoch = train_loader.__len__()-15
+	steps_per_epoch = train_loader.__len__()
 	optimizer = torch.optim.Adam(model.parameters(), lr=config['learning_rate'], weight_decay=config['weight_decay'])
 	swa = SWA(optimizer, swa_start=config['swa_start'] * steps_per_epoch, swa_freq=int(config['swa_freq'] * steps_per_epoch), swa_lr=config['learning_rate'] / 10)
 	scheduler = ExponentialLR(swa, gamma=0.85)
@@ -59,16 +61,6 @@ if __name__ == '__main__':
 
 	global_step = 0
 	for epoch in trange(config['number_epochs']):
-		if epoch == 1:
-			train_dataset = IDRND_dataset(mode=config['mode'],
-										  add_idrnd_v1_dataset=False,
-										  use_face_detection=str2bool(config['use_face_detection']),
-										  double_loss_mode=True,
-										  output_shape=config['image_resolution'])
-			train_loader = DataLoader(train_dataset, batch_size=config['batch_size'], shuffle=True, num_workers=8,
-									  pin_memory=True, drop_last=True)
-			criterion = FocalLoss(add_weight=False).to(device)
-
 		model.train()
 		train_bar = tqdm(train_loader)
 		train_bar.set_description_str(desc=f"N epochs - {epoch}")
