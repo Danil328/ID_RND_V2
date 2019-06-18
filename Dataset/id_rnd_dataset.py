@@ -13,7 +13,6 @@ import matplotlib.pyplot as plt
 
 sys.path.append('..')
 
-# from utils.face_detection.face_detection import get_face
 
 class IDRND_dataset(Dataset):
 	def __init__(self, path='../data', mode='train', double_loss_mode=False, add_idrnd_v1_dataset=False,
@@ -101,9 +100,6 @@ class IDRND_dataset(Dataset):
 		image = cv2.imread(path_to_image)
 		label = self.labels[idx]
 
-		# if self.use_face_detection:
-		#     image = get_face(image)
-
 		image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
 		image = cv2.resize(image, (self.output_shape, self.output_shape))
@@ -156,82 +152,13 @@ def make_weights_for_balanced_classes(dataset: Dataset):
 	return weight
 
 
-class IDRND_3D_dataset(Dataset):
-	def __init__(self, path='../data', mode='train', use_face_detection=False, double_loss_mode=False):
-		self.path_to_data = os.path.join(path, mode)
-		self.mode = mode
-		self.double_loss_mode = double_loss_mode
-		self.use_face_detection = use_face_detection
-		self.masks = glob.glob(os.path.join(self.path_to_data, '2dmask/*'))
-		self.printed = glob.glob(os.path.join(self.path_to_data, 'printed/*'))
-		self.replay = glob.glob(os.path.join(self.path_to_data, 'replay/*'))
-		self.real = glob.glob(os.path.join(self.path_to_data, 'real/*'))
-
-		self.aug = self.get_aug()
-		self.users = self.masks + self.printed + self.replay + self.real
-		if self.double_loss_mode:
-			self.labels = [1] * len(self.masks) + [2] * len(self.printed) + [3] * len(self.replay) + [0] * len(
-				self.real)
-		else:
-			self.labels = [1] * len(self.masks + self.printed + self.replay) + [0] * len(self.real)
-
-		self.users = np.asarray(self.users)
-		self.labels = np.asarray(self.labels)
-
-		self.count_data()
-
-	def count_data(self):
-		print(f'Mask images - {len(self.masks)}\n' +
-			  f'Printed images - {len(self.printed)}\n' +
-			  f'Replay images - {len(self.replay)}\n' +
-			  f'Real images - {len(self.real)}')
-
-		print(f'Spoof images - {self.labels.sum()}\n' +
-			  f'Real images - {self.__len__() - self.labels.sum()}')
-
-	@staticmethod
-	def get_aug(p=.9):
-		return Compose([
-			OneOf([
-				# RandomRotate90(),
-				Flip()
-			])
-		], p=p)
-
-	def __len__(self):
-		return self.labels.shape[0]
-
-	def __getitem__(self, idx):
-		out_image = np.zeros((5, 3, 224, 224), dtype=np.float)  # 5-images; 3-channels; 720-width;720-height;
-		images = glob.glob(os.path.join(self.users[idx], '*.png'))
-		for i, image_path in enumerate(images):
-			im = cv2.imread(image_path)
-			im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
-			im = cv2.resize(im, (224, 224)) / 255.
-			im = np.moveaxis(im, -1, 0)
-			out_image[i] = im
-
-		out_image = np.moveaxis(out_image, 0, 1)
-		label = self.labels[idx]
-		# if self.use_face_detection:
-		#     image = get_face(image)
-		if self.double_loss_mode:
-			return {"image": torch.tensor(out_image, dtype=torch.float),
-					"label0": torch.tensor(label, dtype=torch.long),
-					"label1": torch.tensor(1 - int(label == 0), dtype=torch.float)}
-		return {"image": torch.tensor(out_image, dtype=torch.float), "label": torch.tensor(label, dtype=torch.float)}
-
-
 if __name__ == '__main__':
 	dataset = IDRND_dataset(mode='train', add_idrnd_v1_dataset=True)
 	batch = dataset[1]
 	user_id = batch['user_id']
-	# dataset = IDRND_3D_dataset(mode='val')
-	# batch = dataset[4]
 
 	i = batch['image']
 	i = i.numpy()
 	i = np.moveaxis(i, 0, -1)
-	#i = i[4]
 	plt.imshow(i)
 	plt.show()

@@ -1,11 +1,6 @@
+import torch
 import torch.nn as nn
 from torchvision.models import resnet34
-import torch
-import torch.nn.functional as F
-# from torchsummary import summary
-
-from model.efficientnet_pytorch import EfficientNet, EfficientNetGAP
-
 
 class Identity(nn.Module):
 	def __init__(self):
@@ -27,9 +22,6 @@ class Model(nn.Module):
 			self.base_model,
 			nn.Linear(in_features=1536, out_features=128),
 			nn.ELU(),
-			# nn.BatchNorm1d(num_features = 128),
-			# nn.Linear(in_features = 128, out_features = 32),
-			# nn.ELU(),
 			nn.BatchNorm1d(num_features=128),
 			nn.Linear(in_features=128, out_features=1),
 			nn.Sigmoid()
@@ -87,10 +79,6 @@ class DoubleLossModelTwoHead(nn.Module):
 
 	def forward(self, x):
 		x = self.base_model(x)
-		# Spatial Dropout
-		# x = x.permute(0, 2, 1)  # convert to [batch, channels, time]
-		# x = F.dropout2d(x, 0.25, training=self.training)
-		# x = x.permute(0, 2, 1)  # back to [batch, time, channels]
 		out0 = self.block1(x)
 		out1 = self.block2(x)
 		return out0, out1
@@ -98,4 +86,3 @@ class DoubleLossModelTwoHead(nn.Module):
 
 if __name__ == '__main__':
 	model = DoubleLossModelTwoHead()
-	# summary(model, (3, 300, 300), device='cpu')

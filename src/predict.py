@@ -9,9 +9,9 @@ from model.efficientnet_pytorch import EfficientNet, EfficientNetGAP
 from collections import defaultdict
 from glob import glob
 
-PATH_MODEL = 'for_predict/DoubleModel_21_0.02001377848436672.pth'
+BASE_PATH = 'for_predict/'
 output_shape = 300
-BATCH_SIZE = 16
+BATCH_SIZE = 24
 USE_TTA = True
 
 def kaggle_bag(glob_files, loc_outfile):
@@ -69,66 +69,65 @@ if __name__ == '__main__':
 	device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 	# load model
-	# model = Model(base_model=resnet34(pretrained=False))
-	model = DoubleLossModelTwoHead(base_model=EfficientNetGAP.from_name('efficientnet-b3')).to(device)
-	model.load_state_dict(torch.load(PATH_MODEL, map_location=device))
-	# model = torch.load(PATH_MODEL)
-	model = model.to(device)
-	model.eval()
+	model_paths = glob(BASE_PATH + '*.pth')
+	for fold, model_path in enumerate(model_paths):
+		if model_path.find('EFGAP') > 0:
+			model = DoubleLossModelTwoHead(base_model=EfficientNetGAP.from_name('efficientnet-b3')).to(device)
+		else:
+			model = DoubleLossModelTwoHead(base_model=EfficientNet.from_name('efficientnet-b3')).to(device)
 
-	if USE_TTA:
-		samples, frames, probabilities1, probabilities2, probabilities3 = [], [], [], [], []
-		with torch.no_grad():
-			for video, frame, batch in dataloader:
-				batch = batch.to(device)
-				_, prob1 = model(batch)
-				_, prob2 = model(batch.flip(2))  # Vertical
-				_, prob3 = model(batch.flip(3))  # Horizontal
-				# _, prob4 = model(batch)
+		model.load_state_dict(torch.load(model_path, map_location=device))
+		model = model.to(device)
+		model.eval()
 
-				samples.extend(video)
-				frames.extend(frame.numpy())
-				probabilities1.extend(prob1.view(-1).cpu().numpy())
-				probabilities2.extend(prob2.view(-1).cpu().numpy())
-				probabilities3.extend(prob3.view(-1).cpu().numpy())
+		if USE_TTA:
+			samples, frames, probabilities1, probabilities2, probabilities3 = [], [], [], [], []
+			with torch.no_grad():
+				for video, frame, batch in dataloader:
+					batch = batch.to(device)
+					_, prob1 = model(batch)
+					_, prob2 = model(batch.flip(2))  # Vertical
+					_, prob3 = model(batch.flip(3))  # Horizontal
+					# _, prob4 = model(batch)
 
-		# save
-		pd.DataFrame.from_dict({
-			'id': [x + ':' + str(y) for x, y in zip(samples, frames)],
-			'probability': probabilities1}).to_csv('for_predict/temp_submission/predict1.csv', index=False)
-		pd.DataFrame.from_dict({
-			'id': [x + ':' + str(y) for x, y in zip(samples, frames)],
-			'probability': probabilities2}).to_csv('for_predict/temp_submission/predict2.csv', index=False)
-		pd.DataFrame.from_dict({
-			'id': [x + ':' + str(y) for x, y in zip(samples, frames)],
-			'probability': probabilities3}).to_csv('for_predict/temp_submission/predict3.csv', index=False)
+					samples.extend(video)
+					frames.extend(frame.numpy())
+					probabilities1.extend(prob1.view(-1).cpu().numpy())
+					probabilities2.extend(prob2.view(-1).cpu().numpy())
+					probabilities3.extend(prob3.view(-1).cpu().numpy())
 
-		# Rank Average
-		kaggle_bag("for_predict/temp_submission/predict*.csv", 'for_predict/temp_submission/submission_tta.csv')
-		predictions = pd.read_csv('for_predict/temp_submission/submission_tta.csv')
-		predictions['frame'] = predictions['id'].map(lambda x: x.split(":")[-1])
-		predictions['id'] = predictions['id'].map(lambda x: x.split(":")[0])
-		predictions = predictions.groupby('id').probability.mean().reset_index()
-		predictions['prediction'] = predictions.probability
-		predictions[['id', 'prediction']].to_csv(args.path_submission_csv, index=False)
+			# save
+			pd.DataFrame.from_dict({
+				'id': [x + ':' + str(y) for x, y in zip(samples, frames)],
+				'probability': probabilities1}).to_csv(f'{BASE_PATH}temp_submission/predict1_{fold}.csv', index=False)
+			pd.DataFrame.from_dict({
+				'id': [x + ':' + str(y) for x, y in zip(samples, frames)],
+				'probability': probabilities2}).to_csv(f'{BASE_PATH}temp_submission/predict2_{fold}.csv', index=False)
+			pd.DataFrame.from_dict({
+				'id': [x + ':' + str(y) for x, y in zip(samples, frames)],
+				'probability': probabilities3}).to_csv(f'{BASE_PATH}temp_submission/predict3_{fold}.csv', index=False)
 
-	else:
-		samples, frames, probabilities = [], [], []
-		with torch.no_grad():
-			for video, frame, batch in dataloader:
-				batch = batch.to(device)
-				_, probability = model(batch)
+		else:
+			samples, frames, probabilities = [], [], []
+			with torch.no_grad():
+				for video, frame, batch in dataloader:
+					batch = batch.to(device)
+					_, probability = model(batch)
 
-				samples.extend(video)
-				frames.extend(frame.numpy())
-				probabilities.extend(probability.view(-1).cpu().numpy())
+					samples.extend(video)
+					frames.extend(frame.numpy())
+					probabilities.extend(probability.view(-1).cpu().numpy())
 
-		# save
-		predictions = pd.DataFrame.from_dict({
-			'id': samples,
-			'frame': frames,
-			'probability': probabilities})
+			# save
+			pd.DataFrame.from_dict({
+				'id': [x + ':' + str(y) for x, y in zip(samples, frames)],
+				'probability': probabilities}).to_csv(f'{BASE_PATH}temp_submission/predict_{fold}.csv', index=False)
 
-		predictions = predictions.groupby('id').probability.mean().reset_index()
-		predictions['prediction'] = predictions.probability
-		predictions[['id', 'prediction']].to_csv(args.path_submission_csv, index=False)
+	# Rank Average
+	kaggle_bag(f"{BASE_PATH}temp_submission/predict*.csv", f'{BASE_PATH}temp_submission/submission_tta.csv')
+	predictions = pd.read_csv(f'{BASE_PATH}temp_submission/submission_tta.csv')
+	predictions['frame'] = predictions['id'].map(lambda x: x.split(":")[-1])
+	predictions['id'] = predictions['id'].map(lambda x: x.split(":")[0])
+	predictions = predictions.groupby('id').probability.mean().reset_index()
+	predictions['prediction'] = predictions.probability
+	predictions[['id', 'prediction']].to_csv(args.path_submission_csv, index=False)
