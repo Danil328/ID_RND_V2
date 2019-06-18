@@ -2,9 +2,9 @@ import argparse
 import os
 import pandas as pd
 import torch
-from Dataset.id_rnd_dataset import TestAntispoofDataset
+from cross_val.dataset import TestAntispoofDatasetCV
 from torch.utils.data import DataLoader
-from model.network import DoubleLossModel, DoubleLossModelTwoHead
+from model.network import DoubleLossModelTwoHead
 from model.efficientnet_pytorch import EfficientNet, EfficientNetGAP
 from collections import defaultdict
 from glob import glob
@@ -12,7 +12,8 @@ from glob import glob
 BASE_PATH = 'for_predict/'
 output_shape = 300
 BATCH_SIZE = 24
-USE_TTA = True
+USE_TTA = False
+
 
 def kaggle_bag(glob_files, loc_outfile):
 	with open(loc_outfile, "w") as outfile:
@@ -63,13 +64,13 @@ if __name__ == '__main__':
 			'path': os.path.join(path_test_dir, row.path)
 		} for _, row in test_dataset_paths.iterrows()]
 
-	image_dataset = TestAntispoofDataset(paths=paths, output_shape=output_shape)
+	image_dataset = TestAntispoofDatasetCV(paths=paths, output_shape=output_shape)
 	dataloader = DataLoader(image_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=8)
 
 	device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+	#device = torch.device('cpu')
 
-	# load model
-	model_paths = glob(BASE_PATH + '*.pth')
+	model_paths = glob(BASE_PATH+'*.pth')
 	for fold, model_path in enumerate(model_paths):
 		if model_path.find('EFGAP') > 0:
 			model = DoubleLossModelTwoHead(base_model=EfficientNetGAP.from_name('efficientnet-b3')).to(device)

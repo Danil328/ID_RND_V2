@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from torchvision.models import resnet34
 
+
 class Identity(nn.Module):
 	def __init__(self):
 		super(Identity, self).__init__()
