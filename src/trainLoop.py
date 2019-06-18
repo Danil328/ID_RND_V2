@@ -40,10 +40,10 @@ if __name__ == '__main__':
 	val_loader = DataLoader(val_dataset, batch_size=config['batch_size'], shuffle=True, num_workers=4, drop_last=False)
 
 	model = DoubleLossModelTwoHead(base_model=EfficientNet.from_pretrained('efficientnet-b3')).to(device)
+	#model.load_state_dict(torch.load(f"../cross_val/models_weights/pretrained/EF_{8}_1.5062978111598622_0.9967353313006619.pth"))
 	model.load_state_dict(
-		torch.load(f"../cross_val/models_weights/pretrained/EF_{8}_1.5062978111598622_0.9967353313006619.pth"))
-	# model = DoubleLossModelTwoHead(base_model=pretrainedmodels.__dict__['senet154'](num_classes=1000, pretrained='imagenet')).to(device)
-	# model = Model(base_model=resnet34(pretrained=True))
+		torch.load(f"/media/danil/Data/Kaggle/IDRND_facial_antispoofing_challenge_v2/output/models/DoubleModelTwoHead/DoubleModel_17_0.01802755696873344.pth"))
+
 	summary(model, (3, config['image_resolution'], config['image_resolution']), device='cuda')
 
 	criterion = FocalLoss(add_weight=False).to(device)
@@ -130,80 +130,5 @@ if __name__ == '__main__':
 		torch.save(model.state_dict(), f"../output/models/DoubleModelTwoHead/DoubleModel_{epoch}_{score}.pth")
 		scheduler.step()
 
-	# SGD
-	# criterion = FocalLoss(add_weight=True).to(device)
-	# optimizer = torch.optim.SGD(model.parameters(), lr=config['learning_rate']/2, weight_decay=config['weight_decay']/2)
-	# swa = SWA(optimizer, swa_start=10, swa_freq=5, swa_lr=config['learning_rate']/20)
-	# scheduler = CosineAnnealingLR(optimizer, T_max=train_loader.__len__(), eta_min=1e-9)
-	#
-	# for epoch in trange(config['number_epochs'], config['number_epochs']+10):
-	# 	model.train()
-	# 	train_bar = tqdm(train_loader)
-	# 	train_bar.set_description_str(desc=f"N epochs - {epoch}")
-	#
-	# 	for step, batch in enumerate(train_bar):
-	# 		global_step += 1
-	# 		image = batch['image'].to(device)
-	# 		label4class = batch['label0'].to(device)
-	# 		label = batch['label1'].to(device)
-	#
-	# 		output4class, output = model(image)
-	# 		loss4class = criterion4class(output4class, label4class)
-	# 		loss = criterion(output.squeeze(), label)
-	# 		optimizer.zero_grad()
-	# 		total_loss = loss4class * 0.3 + loss * 0.7
-	# 		total_loss.backward()
-	# 		optimizer.step()
-	# 		train_writer.add_scalar(tag="learning_rate", scalar_value=scheduler.get_lr()[0], global_step=global_step)
-	# 		train_writer.add_scalar(tag="BinaryLoss", scalar_value=loss.item(), global_step=global_step)
-	# 		train_writer.add_scalar(tag="SoftMaxLoss", scalar_value=loss4class.item(), global_step=global_step)
-	# 		train_bar.set_postfix_str(f"Loss = {loss.item()}")
-	# 		try:
-	# 			train_writer.add_scalar(tag="idrnd_score", scalar_value=idrnd_score_pytorch(label, output),
-	# 									global_step=global_step)
-	# 			train_writer.add_scalar(tag="far_score", scalar_value=far_score(label, output),
-	# 									global_step=global_step)
-	# 			train_writer.add_scalar(tag="frr_score", scalar_value=frr_score(label, output),
-	# 									global_step=global_step)
-	# 			train_writer.add_scalar(tag="accuracy", scalar_value=bce_accuracy(label, output),
-	# 									global_step=global_step)
-	# 		except Exception:
-	# 			pass
-	# 		scheduler.step()
-	# 	# swa.swap_swa_sgd()
-	#
-	# 	model.eval()
-	# 	val_bar = tqdm(val_loader)
-	# 	val_bar.set_description_str(desc=f"N epochs - {epoch}")
-	# 	outputs = []
-	# 	targets = []
-	# 	user_ids = []
-	# 	frames = []
-	# 	for step, batch in enumerate(val_bar):
-	# 		image = batch['image'].to(device)
-	# 		label4class = batch['label0'].to(device)
-	# 		label = batch['label1']
-	# 		user_id = batch['user_id']
-	# 		frame = batch['frame']
-	# 		with torch.no_grad():
-	# 			output4class, output = model(image)
-	#
-	# 		outputs += output.cpu().detach().view(-1).numpy().tolist()
-	# 		targets += label.cpu().detach().view(-1).numpy().tolist()
-	# 		user_ids += user_id
-	# 		frames += frame
-	#
-	# 	targets = torch.tensor(targets)
-	# 	outputs = torch.tensor(outputs)
-	# 	score = idrnd_score_pytorch_for_eval(targets, outputs)
-	# 	val_writer.add_scalar(tag="idrnd_score_val", scalar_value=score, global_step=epoch)
-	# 	if epoch > 0:
-	# 		user_score = idrnd_score_pytorch_for_eval_for_user(targets, outputs, user_ids, frames)
-	# 		val_writer.add_scalar(tag="idrnd_score_val_user", scalar_value=user_score, global_step=epoch)
-	# 	val_writer.add_scalar(tag="far_score_val", scalar_value=far_score(targets, outputs), global_step=epoch)
-	# 	val_writer.add_scalar(tag="frr_score_val", scalar_value=frr_score(targets, outputs), global_step=epoch)
-	# 	val_writer.add_scalar(tag="accuracy_val", scalar_value=bce_accuracy(targets, outputs), global_step=epoch)
-	#
-	# 	torch.save(model.state_dict(), f"../output/models/DoubleModelTwoHead/DoubleModel_{epoch}_{score}.pth")
 
 

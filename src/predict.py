@@ -9,9 +9,9 @@ from model.efficientnet_pytorch import EfficientNet, EfficientNetGAP
 from collections import defaultdict
 from glob import glob
 
-PATH_MODEL = 'for_predict/DoubleModel_21_0.02001377848436672.pth'
+PATH_MODEL = 'for_predict/EF_31_0.035556_0.024940.pth'
 output_shape = 300
-BATCH_SIZE = 16
+BATCH_SIZE = 24
 USE_TTA = True
 
 def kaggle_bag(glob_files, loc_outfile):
@@ -70,7 +70,7 @@ if __name__ == '__main__':
 
 	# load model
 	# model = Model(base_model=resnet34(pretrained=False))
-	model = DoubleLossModelTwoHead(base_model=EfficientNetGAP.from_name('efficientnet-b3')).to(device)
+	model = DoubleLossModelTwoHead(base_model=EfficientNet.from_name('efficientnet-b3')).to(device)
 	model.load_state_dict(torch.load(PATH_MODEL, map_location=device))
 	# model = torch.load(PATH_MODEL)
 	model = model.to(device)

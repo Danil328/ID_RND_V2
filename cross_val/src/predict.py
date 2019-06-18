@@ -12,7 +12,7 @@ from glob import glob
 BASE_PATH = 'for_predict/'
 output_shape = 300
 BATCH_SIZE = 24
-USE_TTA = True
+USE_TTA = False
 
 
 def kaggle_bag(glob_files, loc_outfile):
