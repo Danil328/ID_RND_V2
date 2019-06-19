@@ -240,9 +240,10 @@ url_map = {
 
 def load_pretrained_weights(model, model_name):
     """ Loads pretrained weights, and downloads if loading for the first time. """
-    if model_name == 'efficientnet-b5':
-        model.load_state_dict(torch.load(url_map[model_name]), strict=False)
+    url = url_map[model_name]
+    if 'http' in url:
+        state_dict = model_zoo.load_url(url)
     else:
-        state_dict = model_zoo.load_url(url_map[model_name])
-        model.load_state_dict(state_dict, strict=False)
+        state_dict = torch.load(url)
+    model.load_state_dict(state_dict, strict=False)
     print('Loaded pretrained weights for {}'.format(model_name))

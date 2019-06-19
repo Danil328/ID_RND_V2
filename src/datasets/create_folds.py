@@ -3,11 +3,9 @@ import os
 import pandas as pd
 from sklearn import model_selection
 
-SOURCE_DIR = '/mnt/hdd1/qovaxx/antospoofing/'  # dl2
-
 if __name__ == '__main__':
-    print('Start')
-    user_paths = glob.glob(os.path.join(SOURCE_DIR, 'train') + '/*/*')
+    print('Start splitting')
+    user_paths = glob.glob(os.path.join('/mnt/hdd1/qovaxx/antospoofing/', 'train') + '/*/*')
     folds = pd.DataFrame({'users': user_paths})
     kf = model_selection.KFold(n_splits=5, shuffle=True, random_state=777)
 
