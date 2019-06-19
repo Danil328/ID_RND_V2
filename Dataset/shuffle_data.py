@@ -1,22 +1,18 @@
 import glob
 import os
-from sklearn.model_selection import KFold
-import numpy as np
 import pandas as pd
+from sklearn import model_selection
 
-src_dir = '../data/'
-n_folds = 5
+SOURCE_DIR = '/mnt/hdd1/qovaxx/antospoofing/'  # dl2
 
 if __name__ == '__main__':
-    users = glob.glob(os.path.join(src_dir, 'train')+'/*/*') + glob.glob(os.path.join(src_dir, 'val')+'/*/*')
-    df = pd.DataFrame()
-    df['users'] = users
+    print('Start')
+    user_paths = glob.glob(os.path.join(SOURCE_DIR, 'train') + '/*/*')
+    folds = pd.DataFrame({'users': user_paths})
+    kf = model_selection.KFold(n_splits=5, shuffle=True, random_state=777)
 
-    kf = KFold(n_splits=n_folds, shuffle=True)
+    for index, itrain, itest in enumerate(kf.split(user_paths)):
+        users_for_train = [user_paths[i] for i in itrain]
+        folds[f'fold_{index}'] = folds['users'].map(lambda x: 'train' if x in users_for_train else 'val')
 
-    for idx, (train_index, test_index) in enumerate(kf.split(users)):
-        train_users = [users[i] for i in train_index]
-        val_users = [users[i] for i in test_index]
-        df[f'fold_{idx}'] = df['users'].map(lambda x: 'train' if x in train_users else 'val')
-
-    df.to_csv('cross_val_DF.csv', index=False)
+    folds.to_csv('folds.csv', index=False)

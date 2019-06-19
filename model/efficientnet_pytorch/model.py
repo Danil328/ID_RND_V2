@@ -13,6 +13,7 @@ from .utils import (
     load_pretrained_weights,
 )
 
+
 class MBConvBlock(nn.Module):
     """
     Mobile Inverted Residual Bottleneck Block
@@ -158,7 +159,7 @@ class EfficientNet(nn.Module):
             drop_connect_rate = self._global_params.drop_connect_rate
             if drop_connect_rate:
                 drop_connect_rate *= float(idx) / len(self._blocks)
-            x = block(x) # , drop_connect_rate) # see https://github.com/tensorflow/tpu/issues/381
+            x = block(x)  # , drop_connect_rate) # see https://github.com/tensorflow/tpu/issues/381
 
         return x
 
@@ -198,9 +199,9 @@ class EfficientNet(nn.Module):
     def _check_model_name_is_valid(cls, model_name, also_need_pretrained_weights=False):
         """ Validates model name. None that pretrained weights are only available for
         the first four models (efficientnet-b{i} for i in 0,1,2,3) at the moment. """
-        num_models = 4 if also_need_pretrained_weights else 8
-        valid_models = ['efficientnet_b'+str(i) for i in range(num_models)]
-        if model_name.replace('-','_') not in valid_models:
+        num_models = 6 if also_need_pretrained_weights else 8
+        valid_models = ['efficientnet_b' + str(i) for i in range(num_models)]
+        if model_name.replace('-', '_') not in valid_models:
             raise ValueError('model_name should be one of: ' + ', '.join(valid_models))
 
 
@@ -281,7 +282,7 @@ class EfficientNet600(nn.Module):
             drop_connect_rate = self._global_params.drop_connect_rate
             if drop_connect_rate:
                 drop_connect_rate *= float(idx) / len(self._blocks)
-            x = block(x) # , drop_connect_rate) # see https://github.com/tensorflow/tpu/issues/381
+            x = block(x)  # , drop_connect_rate) # see https://github.com/tensorflow/tpu/issues/381
 
         return x
 
@@ -321,9 +322,9 @@ class EfficientNet600(nn.Module):
     def _check_model_name_is_valid(cls, model_name, also_need_pretrained_weights=False):
         """ Validates model name. None that pretrained weights are only available for
         the first four models (efficientnet-b{i} for i in 0,1,2,3) at the moment. """
-        num_models = 4 if also_need_pretrained_weights else 8
-        valid_models = ['efficientnet_b'+str(i) for i in range(num_models)]
-        if model_name.replace('-','_') not in valid_models:
+        num_models = 6 if also_need_pretrained_weights else 8
+        valid_models = ['efficientnet_b' + str(i) for i in range(num_models)]
+        if model_name.replace('-', '_') not in valid_models:
             raise ValueError('model_name should be one of: ' + ', '.join(valid_models))
 
 
@@ -456,7 +457,7 @@ class EfficientNetGAP(nn.Module):
     def _check_model_name_is_valid(cls, model_name, also_need_pretrained_weights=False):
         """ Validates model name. None that pretrained weights are only available for
         the first four models (efficientnet-b{i} for i in 0,1,2,3) at the moment. """
-        num_models = 4 if also_need_pretrained_weights else 8
-        valid_models = ['efficientnet_b'+str(i) for i in range(num_models)]
-        if model_name.replace('-','_') not in valid_models:
+        num_models = 6 if also_need_pretrained_weights else 8
+        valid_models = ['efficientnet_b' + str(i) for i in range(num_models)]
+        if model_name.replace('-', '_') not in valid_models:
             raise ValueError('model_name should be one of: ' + ', '.join(valid_models))
