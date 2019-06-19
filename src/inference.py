@@ -12,16 +12,16 @@ from torch.utils.data import DataLoader
 from src.datasets.augmentations import get_test_augmentations
 from src.datasets.datasets import TestDataset
 from src.model.efficientnet import TwoHeadModel
-from src.model.efficientnet import EfficientNetMod
+from src.model.efficientnet import EfficientNet
 from src.utils import rank_average
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 BASE_PATH = 'docker_inference/'
-SIZE = 600
+SIZE = 700
 WORKERS = 8
 BATCH_SIZE = 24
-TTA = True
-EF_TYPE = 'efficientnet-b3'
+TTA = False
+EF_TYPE = 'efficientnet-b5'
 
 
 if __name__ == '__main__':
@@ -46,7 +46,7 @@ if __name__ == '__main__':
     model_paths = glob(BASE_PATH + '*.pth')
 
     for model_index, model_path in enumerate(model_paths):
-        model = TwoHeadModel(EfficientNetMod.from_name(EF_TYPE)).to(DEVICE)
+        model = TwoHeadModel(EfficientNet.from_name(EF_TYPE)).to(DEVICE)
 
         state_dict = torch.load(model_path, map_location=DEVICE)
         state_dict = {k.split('.', 1)[1]: v for k, v in state_dict.items()}

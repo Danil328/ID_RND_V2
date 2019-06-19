@@ -234,7 +234,7 @@ url_map = {
     'efficientnet-b1': 'http://storage.googleapis.com/public-models/efficientnet-b1-dbc7070a.pth',
     'efficientnet-b2': 'http://storage.googleapis.com/public-models/efficientnet-b2-27687264.pth',
     'efficientnet-b3': 'http://storage.googleapis.com/public-models/efficientnet-b3-c8376fa2.pth',
-    'efficientnet-b5': '/mnt/hdd1/qovaxx/ID_RND_V2/output/efficientnet-b5.pth',
+    'efficientnet-b5': '/raid/data_share/qovaxx/ID_RND_V2/output/efficientnet-b5.pth',
 }
 
 

@@ -13,7 +13,7 @@ from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader
 from tqdm import trange, tqdm
 
-from src.model.efficientnet import EfficientNetMod
+from src.model.efficientnet import EfficientNet
 from src.model.efficientnet import TwoHeadModel
 from src.datasets.datasets import TrainDataset
 from src.loss import FocalLoss
@@ -21,16 +21,15 @@ from src.metric import idrnd_score
 from src.datasets.augmentations import get_train_augmentations
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-BATCH_SIZE = 24
+BATCH_SIZE = 32
 LEARNING_RATE = 5e-4
 WEIGHT_DECAY = 1e-5
 EPOCHS = 50
-SIZE = 600
-WORKERS = 16
+SIZE = 700
+WORKERS = 40
 BIN_COEFF = 1.02
 CROSS_COEFF = 0.98
-EF_TYPE = 'efficientnet-b3'
-LOGS_PATH = '../output/logs'
+EF_TYPE = 'efficientnet-b5'
 
 
 def get_train_loader(folds, fold, steps_probas=[0.5, 0.75, 0.25]):
@@ -88,7 +87,7 @@ def train_loop(fold):
     train_loader = get_train_loader(folds, fold)
     val_loader = get_val_loader(folds, fold)
 
-    model = TwoHeadModel(EfficientNetMod.from_pretrained(EF_TYPE)).to(DEVICE)
+    model = TwoHeadModel(EfficientNet.from_pretrained(EF_TYPE)).to(DEVICE)
     model = nn.DataParallel(model)
     focal_criterion = FocalLoss().to(DEVICE)
     crossentropy_criterion = CrossEntropyLoss().to(DEVICE)
@@ -102,7 +101,7 @@ def train_loop(fold):
     cross_w = 0.5
 
     for epoch in trange(EPOCHS):
-        if epoch == 3:
+        if epoch == 5:
             train_loader = get_train_loader(folds, fold, steps_probas=[0.0, 0.5, 0.0])
 
         model.train()
