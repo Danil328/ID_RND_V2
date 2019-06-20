@@ -21,7 +21,7 @@ from src.metric import idrnd_score
 from src.datasets.augmentations import get_train_augmentations
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-BATCH_SIZE = 24
+BATCH_SIZE = 25
 LEARNING_RATE = 5e-4
 WEIGHT_DECAY = 1e-5
 EPOCHS = 50
@@ -30,7 +30,6 @@ WORKERS = 16
 BIN_COEFF = 1.02
 CROSS_COEFF = 0.98
 EF_TYPE = 'efficientnet-b3'
-LOGS_PATH = '../output/logs'
 
 
 def get_train_loader(folds, fold, steps_probas=[0.5, 0.75, 0.25]):

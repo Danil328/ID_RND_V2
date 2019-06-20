@@ -20,7 +20,7 @@ BASE_PATH = 'docker_inference/'
 SIZE = 600
 WORKERS = 8
 BATCH_SIZE = 24
-TTA = True
+TTA = False
 EF_TYPE = 'efficientnet-b3'
 
 
