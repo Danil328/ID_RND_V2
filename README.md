@@ -1,4 +1,4 @@
-# ID R&D antispoofing challenge
+# ID R&D antispoofing challenge (Second place solution)
 
 Материалы к соревнованию по определению обмана при идентификации по лицу с помощью камеры.
 
